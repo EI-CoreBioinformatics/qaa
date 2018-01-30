@@ -1,0 +1,130 @@
+{
+  "__default__": {
+    "partition": "ei-medium",
+    "memory": "8000",
+    "c": "8",
+    "J": "bggrl",
+    "time": "2:00",
+    "exclude": "t128n29,t128n0,t128n10,t128n11,t128n15,t128n16,t128n17,t128n18,t128n19,t128n1,t128n21,t128n23,t128n24,t128n25,t128n26,t128n27,t128n2,t128n3,t128n5,t128n6,t128n7,t128n8,t128n95,t128n9,t256n2,t256n3,t128n34,t128n4,t256n13"
+  },
+  "qc_bbduk": {
+    "J": "bg-qc",
+    "memory": "32000"
+  },
+  "qc_fastqc": {
+    "J": "bg-qc",
+    "c": "2"
+  },
+  "qc_fastqc_bbnorm": {
+    "J": "bg-qc",
+    "c": "2"
+  },
+  "qc_fastqc_bbduk": {
+    "J": "bg-qc",
+    "c": "2"
+  },
+  "qc_kat_hist": {
+    "memory": "32000",
+    "c": "8",
+    "J": "bg-qc"
+  },
+  "qc_tadpole": {
+    "memory": "32000",
+    "c": "8",
+    "J": "bg-qc"
+  },
+  "qc_bbnorm": {
+    "memory": "64000",
+    "J": "bg-qc"
+  },
+  "gsize_kat_hist": {
+    "partition": "ei-medium",
+    "memory": "32000",
+    "c": "8",
+    "J": "bg-qc"
+  },
+  "bbduk_qc": {
+    "memory": "32000",
+    "J": "bg-qc"
+  },
+  "bbnorm_qc": {
+    "memory": "64000",
+    "J": "bg-qc"
+  },
+  "spades_assembly": {
+    "memory": "64000",
+    "J": "bg-asm"
+  },
+  "unicycler_assembly": {
+    "memory": "64000",
+    "J": "bg-asm"
+  },
+  "asm_assembly": {
+    "memory": "64000",
+    "J": "bg-asm",
+    "time": "48:00:00"
+  },
+  "asm_unicycler": {
+    "memory": "64000",
+    "J": "bg-asm",
+    "time": "48:00:00"
+  },
+  "ann_prokka": {
+    "J": "bg-ann",
+    "time": "99:00"
+  },
+  "ann_dfast": {
+    "J": "bg-ann",
+    "time": "6-00:00"
+  },
+  "prokka_annotation": {
+    "J": "bg-ann"
+  },
+  "dfast_annotation": {
+    "J": "bg-ann"
+  },
+  "qa_quast": {
+    "J": "bg-qa"
+  },
+  "qa_busco_geno": {
+    "J": "bg-qa"
+  },
+  "qa_busco_tran": {
+    "J": "bg-qa"
+  },
+  "qa_busco_prot": {
+    "J": "bg-qa"
+  },
+  "qa_blob_bwa_mem": {
+    "J": "bg-qa",
+    "memory": "32000",    
+  },
+  "qa_blob_blast": {
+    "J": "bg-qa",
+    "memory": "32000",
+    "time": "48:00:00"
+  },
+  "qa_blobtools": {
+    "J": "bg-qa",
+    "c": 1,
+    "memory": "4000"
+  },
+  "blob_bwa_mem": {
+    "J": "bg-qa",
+    "memory": "32000",    
+  },
+  "blob_blast": {
+    "J": "bg-qa",
+    "memory": "32000",
+    "time": "48:00:00"
+  },
+  "blob_blobtools": {
+    "J": "bg-qa",
+    "c": 1,
+    "memory": "4000"
+  },
+  "fin_compile_assembly": { "J": "bg-fin", "c": 1, "memory": "2000"}, 
+  "fin_compile_reads": { "J": "bg-fin", "c": 1, "memory": "2000"}, 
+  "fin_multiqc": { "J": "bg-fin", "c": 1, "memory": "8000"}, 
+  "fin_compile_qa": { "J": "bg-fin", "c": 1, "memory": 2000}
+}

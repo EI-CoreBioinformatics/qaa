@@ -1,0 +1,27 @@
+#!/bin/bash
+
+outdir=$1
+mkdir -p "${outdir}"
+echo "WRITING TO $outdir"
+config="${outdir}/busco-config.ini"
+outdir=$(dirname $outdir)
+echo "[busco]" > $config
+echo "output_path = ${outdir}" >> $config
+echo "[tblastn]" >> $config
+echo "path = /tgac/software/testing/blast/2.2.30/x86_64/bin/" >> $config
+echo "[makeblastdb]" >> $config
+echo "path = /tgac/software/testing/blast/2.2.30/x86_64/bin/" >> $config
+echo "[augustus]" >> $config
+echo "path = /tgac/software/testing/augustus/3.2.1/x86_64/bin/" >> $config
+echo "[etraining]" >> $config
+echo "path = /tgac/software/testing/augustus/3.2.1/x86_64/bin/" >> $config
+echo "[gff2gbSmallDNA.pl]" >> $config
+echo "path = /tgac/software/testing/augustus/3.2.1/x86_64/scripts/" >> $config
+echo "[new_species.pl]" >> $config
+echo "path = /tgac/software/testing/augustus/3.2.1/x86_64/scripts/" >> $config
+echo "[optimize_augustus.pl]" >> $config
+echo "path = /tgac/software/testing/augustus/3.2.1/x86_64/scripts/" >> $config
+echo "[hmmsearch]" >> $config
+echo "path = /tgac/software/testing/hmmer/3.1b2/x86_64/bin/" >> $config
+echo "[Rscript]" >> $config
+echo "path = /tgac/software/testing/R/3.3.1/x86_64/bin/" >> $config

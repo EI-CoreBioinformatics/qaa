@@ -1,0 +1,67 @@
+
+paths:
+
+  # Directory that contain the results of the PAP after the transfer procedure has been executed
+  default_dest_dir_internal_projects: "/tgac/data/reads"
+  default_dest_dir_external_projects: "/tgac/data/private_reads"
+
+  # Default directory under which PAP output is placed
+  default_pap_dir: "/tgac/pnp/qc"
+
+  # Default directory under which all raw sequencing data is placed
+  default_raw_dir: "/tgac/pnp/raw"
+
+  # Default directory where all analysis will be sent during transfer
+  default_stats_dir: "/tgac/workarea/group-pb/pap_stats/data"
+
+
+analysis:
+
+  # Percentage of samples specified in the samplesheet that must be present for the analysis stage to go ahead.
+  # If the user wishes to override this behaviour they can force analysis with the --"force_analysis" command line option.
+  required_files_perc: 90
+
+  # Maximum number of reads for each sample's subsample.  This should be more than will be used by centrifuge and FastQ Screen
+  subsample_count: 2000000
+
+
+centrifuge:
+
+  # Adapters for bbduk
+  adapters: "/tgac/references/databases/centrifuge/adapters.fa"
+
+  # Centrifuge index database
+  db: "/tgac/references/databases/centrifuge/nt"
+
+  # ETE taxonomy database for centrifuge_classify script
+  etetoolkit_db: "/tgac/references/databases/etetoolkit/20170928/taxa.sqlite"
+
+  # Centrifuge mode options are {"off", "parallel", "multi"}
+  mode: "multi"
+
+  # If mode is parallel, this determines the threshold at which we switch from per sample centrifuge to a per project merged sample centrifuge
+  # If mode is multi, then this determines how many samples are processed by each centrifuge-multi instance.  Therefore this effects the number of centrifuge-multi processes
+  # that will be started in parallel in high sample projects.
+  pp_threshold: 100
+
+  # The number of threads centrifuge should use
+  threads: 16
+
+load:
+  fastqc: "source fastqc-0.11.5"
+  seqtk: "source seqtk-git20160921"
+  bbmap: "source jre-8u144 && source bbmap-37.24"
+  quast: "source quast-4.3"
+  kat: "source kat-dev"
+  busco: "source busco-3.0"
+  blob_bwa: "source bwa-0.7.16a && source samtools-1.5"
+  blob_blast: "source blast-2.6.0"
+  blobtools: "source python_anaconda-2.5.0 && source blobtools-0.9.19 && source samtools-1.5"
+  multiqc: "source multiqc-1.3_dev"
+
+cmd:
+  quast: "python2 /tgac/software/testing/quast/4.3/x86_64/bin/quast.py"
+
+blob_blastdb: "/ei/public/databases/blast/ncbi/nt_20171013/nt"
+
+multiqc_config: "/tgac/software/testing/bgrrl/0.1/src/ei_bgrrl/bgrrl/etc/multiqc_config.yaml"

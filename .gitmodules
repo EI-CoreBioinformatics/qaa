@@ -1,0 +1,4 @@
+[submodule "deps/eicore"]
+	path = deps/eicore
+	url = https://github.com/maplesond/eicore.git
+	branch = develop
