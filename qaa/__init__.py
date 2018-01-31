@@ -20,7 +20,8 @@ ASM_Sample = namedtuple("ASM_Sample", "id assembly bamfile r1 r2 busco_id".split
 def readSamplesheet(_in):
         import csv
         for row in csv.reader(_in, delimiter=","):
-                yield (row[0], ASM_Sample(*row))
+		if row and row[0]:
+	                yield (row[0], ASM_Sample(*row))
 
 TIME_CMD = " /usr/bin/time -v"
 

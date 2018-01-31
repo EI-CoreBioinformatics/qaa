@@ -66,8 +66,10 @@ def main():
 
 	parser.add_argument("input", help="""Path to assembly samplesheet.""")
 	parser.add_argument("--output-dir", "-o", type=str, default=".", help="QAA will output data to this directory.")
+	parser.add_argument("--blobtools-no-bwa", action="store_true", help="Use this switch to avoid aligning your reads against the reference, if you are providing your own bam files in the samplesheet.")
 
 	parser.add_argument("--config", help="Configuration file for the pipeline. This file specifies details for accessing services and commands to be executed prior to running each pipeline tool.  Default config file is: " + DEFAULT_CONFIG_FILE)
+	
 
 	make_exeenv_arg_group(parser) #, hpc_config=DEFAULT_HPC_CONFIG_FILE)	# Add in cluster and DRMAA options
 
@@ -113,6 +115,7 @@ def main():
 	config["out_dir"] = args.output_dir
 	config["etc"] = join(dirname(__file__), "..", "etc")
 	config["cwd"] = os.getcwd()
+	config["blobtools_run_bwa"] = not args.blobtools_no_bwa
 
 	"""if args.contig_minlen:
         	config["use_asm_lengthfilter"] = True
