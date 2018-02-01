@@ -7,7 +7,10 @@ from os.path import join, basename, dirname
 from qaa import readSamplesheet, loadPreCmd, TIME_CMD
 
 # setup I/O
-INPUTFILES = dict(readSamplesheet(open(config["samplesheet"])))
+if type(config["samplesheet"]) is str:
+	INPUTFILES = dict(readSamplesheet(csv.reader(open(config["samplesheet"]), delimiter=",")))
+else:
+	INPUTFILES = dict(readSamplesheet(config["samplesheet"]))
 with open("qaa-inputfiles.txt", "w") as input_out:
 	print(*INPUTFILES.values(), sep="\n", file=input_out)
 OUTPUTDIR = config["out_dir"]
