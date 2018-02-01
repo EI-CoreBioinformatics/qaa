@@ -22,7 +22,8 @@ QAA_Sample = namedtuple("QAA_Sample", QAA_SAMPLESHEET_COLUMNS)
 
 def readSamplesheet(_in):
 	import csv
-	for row in csv.reader(_in, delimiter=","):
+	# for row in csv.reader(_in, delimiter=","):
+	for row in _in:
 		if row and row[0]:
 			while len(row) != len(QAA_SAMPLESHEET_COLUMNS):
 				row.append("")
@@ -83,8 +84,14 @@ class QAA_Runner(object):
 			print("done.")
 
 		print()
-			
-		self.config["samplesheet"] = qaa_args.input
+		
+		if "input_stream" in qaa_args:
+			self.config["samplesheet"] = qaa_args.input_stream
+			self.config["has_stream"] = True
+		else:
+			self.config["has_stream"] = False
+			self.config["samplesheet"] = qaa_args.input
+
 		self.config["out_dir"] = self.output_dir
 		self.config["etc"] = os.path.join(os.path.dirname(__file__), "..", "etc")
 		self.config["cwd"] = os.getcwd()
@@ -114,6 +121,7 @@ class QAA_Runner(object):
 		self.unlock = qaa_args.unlock
 
 	def run(self):		
+		# return run_snakemake(os.path.join(os.path.dirname(__file__), "zzz", "qaa.smk.py"), self.output_dir, self.new_config_file, self.exe_env, dryrun=False, unlock=self.unlock)
 		return run_snakemake(os.path.join(os.path.dirname(__file__), "zzz", "qaa.smk.py"), self.output_dir, self.new_config_file, self.exe_env, dryrun=False, unlock=self.unlock)
 	
 
