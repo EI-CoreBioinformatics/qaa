@@ -15,13 +15,17 @@ DEFAULT_CONFIG_FILE = os.path.join(ETC_DIR, "qaa_config.yaml")
 import csv
 from collections import namedtuple
 
-ASM_Sample = namedtuple("ASM_Sample", "id assembly bamfile r1 r2 busco_id".split(" "))
+QAA_SAMPLESHEET_COLUMNS = "id assembly bamfile r1 r2 busco_id transcripts proteins".split(" ")
+QAA_Sample = namedtuple("QAA_Sample", QAA_SAMPLESHEET_COLUMNS)
 
 def readSamplesheet(_in):
-        import csv
-        for row in csv.reader(_in, delimiter=","):
+	import csv
+	for row in csv.reader(_in, delimiter=","):
 		if row and row[0]:
-	                yield (row[0], ASM_Sample(*row))
+			while len(row) != len(QAA_SAMPLESHEET_COLUMNS):
+				row.append("")
+			yield (row[0], QAA_Sample(*row))
+
 
 TIME_CMD = " /usr/bin/time -v"
 
