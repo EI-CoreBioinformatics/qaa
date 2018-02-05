@@ -12,7 +12,9 @@ def compileQUASTReport(quast_dir, out=sys.stdout):
                 if not header:
                     header = first
                     print(*header, file=out, sep="\t")
+                    # print(*header, sep="\t")
                     # yield header
                 for row in r:
-                    print(*row, sep="\t", file=out)
+                    print(*row, file=out, sep="\t")
+                    # print(*row, sep="\t")
                     # yield row
