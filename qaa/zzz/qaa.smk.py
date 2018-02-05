@@ -88,6 +88,7 @@ if config["run_proteome_module"]:
 		log:
 			join(config["cwd"], LOG_DIR, "{sample}_busco_prot.log")
 		params:
+			# input = lambda wildcards: join(config["cwd"], wildcards.busco_input),
 			outdir = lambda wildcards: join(config["cwd"], BUSCO_PROT_DIR, "run_" + wildcards.sample),
 			final_outdir = lambda wildcards: join(config["cwd"], BUSCO_PROT_DIR, wildcards.sample),
 			tmp = lambda wildcards: join(config["cwd"], BUSCO_PROT_DIR, "tmp", wildcards.sample),
@@ -99,7 +100,7 @@ if config["run_proteome_module"]:
 		shell:
 			BUSCO_INIT_DIR + " {params.outdir} && cd {params.outdir} && cd .. &&" + \
 			" {params.load}" + TIME_CMD + \
-			" run_BUSCO.py -i {input.busco_input} -c {threads} -m {params.busco_mode}" + \
+			" run_BUSCO.py -i " + join(config["cwd"], "{input.busco_input}") + " -c {threads} -m {params.busco_mode}" + \
 			" --force -t {params.tmp} -l {params.busco_data} -o {wildcards.sample} &> {log} && cd " + CWD + \
 			" && mkdir -p {params.final_outdir} && mv -v {params.outdir}/* {params.final_outdir}/" + \
 			" && rm -rf {params.outdir}" + \
@@ -118,6 +119,7 @@ if config["run_transcriptome_module"]:
 		log:
 			join(config["cwd"], LOG_DIR, "{sample}_busco_tran.log")
 		params:
+			# input = lambda wildcards: join(config["cwd"], wildcards.busco_input),
 			outdir = lambda wildcards: join(config["cwd"], BUSCO_TRAN_DIR, "run_" + wildcards.sample),
 			final_outdir = lambda wildcards: join(config["cwd"], BUSCO_TRAN_DIR, wildcards.sample),
 			tmp = lambda wildcards: join(config["cwd"], BUSCO_TRAN_DIR, "tmp", wildcards.sample),
@@ -129,7 +131,7 @@ if config["run_transcriptome_module"]:
 		shell:
 			BUSCO_INIT_DIR + " {params.outdir} && cd {params.outdir} && cd .. &&" + \
 			" {params.load}" + TIME_CMD + \
-			" run_BUSCO.py -i {input.busco_input} -c {threads} -m {params.busco_mode}" + \
+			" run_BUSCO.py -i " + join(config["cwd"], "{input.busco_input}") + " -c {threads} -m {params.busco_mode}" + \
 			" --force -t {params.tmp} -l {params.busco_data} -o {wildcards.sample} &> {log} && cd " + CWD + \
 			" && mkdir -p {params.final_outdir} && mv -v {params.outdir}/* {params.final_outdir}/" + \
 			" && rm -rf {params.outdir}" + \
@@ -145,6 +147,7 @@ if config["run_genome_module"]:
 			log:	
 				join(config["cwd"], LOG_DIR, "{sample}_busco_geno.log")
 			params:
+				# input = lambda wildcards: join(config["cwd"], wildcards.input.busco_input),
 				outdir = lambda wildcards: join(config["cwd"], BUSCO_GENO_DIR, "run_" + wildcards.sample),
 				final_outdir = lambda wildcards: join(config["cwd"], BUSCO_GENO_DIR, wildcards.sample),
 				tmp = lambda wildcards: join(config["cwd"], BUSCO_GENO_DIR,  "tmp", wildcards.sample),
@@ -156,7 +159,7 @@ if config["run_genome_module"]:
 			shell:
 				BUSCO_INIT_DIR + " {params.outdir} && cd {params.outdir} && cd .. &&" + \
 				" {params.load}" + TIME_CMD + \
-				" run_BUSCO.py -i {input.busco_input} -c {threads} -m {params.busco_mode}" + \
+				" run_BUSCO.py -i " + join(config["cwd"], "{input.busco_input}") + " -c {threads} -m {params.busco_mode}" + \
 				" --force -t {params.tmp} -l {params.busco_data} -o {wildcards.sample} &> {log} && cd " + CWD + \
 				" && mkdir -p {params.final_outdir} && mv -v {params.outdir}/* {params.final_outdir}/" + \
 				" && rm -rf {params.outdir}" + \

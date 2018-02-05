@@ -1,3 +1,5 @@
 qaa.egg-info/
 build/
 dist/
+qaa/__pycache__/
+qaa/reporting/__pycache__/

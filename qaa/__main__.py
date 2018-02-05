@@ -81,5 +81,7 @@ def main():
 	qaa_runner = QAA_Runner(args)
 	run_result = qaa_runner.run()
 
+	qaa_runner.report(os.path.join(args.output_dir, "reports"), os.path.join(args.output_dir, "qa", "asm", "busco"))
+
 if __name__ == "__main__":
 	main()

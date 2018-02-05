@@ -5,6 +5,8 @@ from collections import namedtuple
 import yaml
 
 from eicore.external_process.snakemake_helper import *
+from qaa.reporting.busco_report import compileBUSCOReport
+from qaa.reporting.quast_report import compileQUASTReport
 
 __title__ = "qaa"
 __author__ = 'Christian Schudoma (cschu)'
@@ -50,11 +52,15 @@ class QAA_Runner(object):
 	def __init__(self, qaa_args):
 		print("Configuring execution environment ... ", end="", flush=True)
 		self.output_dir = qaa_args.output_dir
+		self.report_dir = os.path.join(self.output_dir, "reports")
+		if not os.path.exists(self.report_dir):
+			os.makedirs(self.report_dir)
 		self.logs_dir = os.path.join(self.output_dir, "hpc_logs")
 		self.exe_env = ExecutionEnvironment(qaa_args, NOW, job_suffix=qaa_args.input + "_" + self.output_dir, log_dir=self.logs_dir)
 		print("done.")
 		print(str(self.exe_env))
 		print()
+		self.runmode = qaa_args.runmode
 
 		if qaa_args.config:
 			print("Custom configuration file specified, overriding defaults ... ", end="", flush=True)
@@ -132,7 +138,27 @@ class QAA_Runner(object):
 		return snakemake(snakefile, cores=self.exe_env.max_cores, local_cores=self.exe_env.max_cores, nodes=self.exe_env.max_nodes, config=self.config, workdir=".", cluster_config=cluster_cfg, cluster=cluster, drmaa=drmaa, unlock=self.unlock, printshellcmds=True, printreason=True, stats=os.path.join(self.output_dir, os.path.basename(snakefile) + "-" + NOW + ".stats"), jobname="qaa.{rulename}.{jobid}", force_incomplete=True, latency_wait=60 if self.exe_env.use_scheduler or self.exe_env.use_drmaa else 1, printdag=False, dryrun=False, forceall=False, verbose=True)
 		"""
 
-		return run_snakemake(os.path.join(os.path.dirname(__file__), "zzz", "qaa.smk.py"), self.output_dir, self.new_config_file, self.exe_env, dryrun=False, unlock=self.unlock)
+		run_result = run_snakemake(os.path.join(os.path.dirname(__file__), "zzz", "qaa.smk.py"), self.output_dir, self.new_config_file, self.exe_env, dryrun=False, unlock=self.unlock)
+
+		self.report()
+
+		return run_result
+
+	def report(self):
+		def report_func(qa_dir, report_out, rfunc):
+			with open(report_out, "w") as rep_out:
+				rfunc(qa_dir, out=rep_out)
+			
+		if self.runmode == "survey":
+			report_func(os.path.join(self.output_dir, "qa", "survey", "quast"), os.path.join(self.report_dir, "quast_survey_report.tsv"), compileQUASTReport)
+			# blobtools
+		elif self.runmode == "asm":
+			report_func(os.path.join(self.output_dir, "qa", "asm", "quast"), os.path.join(self.report_dir, "quast_report.tsv"), compileQUASTReport)
+			# blobtools
+			report_func(os.path.join(self.output_dir, "qa", "asm", "busco", "geno"), os.path.join(self.report_dir, "busco_genome_report.tsv"), compileBUSCOReport)
+		elif self.runmode == "ann":
+			report_func(os.path.join(self.output_dir, "qa", "asm", "busco"), os.path.join(self.report_dir, "busco_report.tsv"), compileBUSCOReport)
+		
 	
 
 class QAA_ArgumentsAdapter(object):
