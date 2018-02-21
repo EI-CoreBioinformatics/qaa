@@ -23,6 +23,8 @@ QAA_SAMPLESHEET_COLUMNS = "id assembly bamfile r1 r2 busco_id transcripts protei
 QAA_Sample = namedtuple("QAA_Sample", QAA_SAMPLESHEET_COLUMNS)
 
 TIME_CMD = " /usr/bin/time -v"
+QAA_ID = "XXX"
+
 
 def readSamplesheet(_in):
 	import csv
@@ -114,10 +116,11 @@ class QAA_Runner(object):
 				sys.exit(1)
 
 		self.config["survey_assembly"] = qaa_args.survey_assembly
+		self.config["no_blobtools"] = qaa_args.no_blobtools if "no_blobtools" in qaa_args else True
 		self.config["run_genome_module"] = qaa_args.survey_assembly or ("geno" in requested_modes or "genome" in requested_modes)
 		self.config["run_transcriptome_module"] = not qaa_args.survey_assembly and ("tran" in requested_modes or "transcriptome" in requested_modes)
 		self.config["run_proteome_module"] = not qaa_args.survey_assembly and ("prot" in requested_modes or "proteome" in requested_modes)
-
+		self.config["quast_mincontiglen"] = qaa_args.quast_mincontiglen if "quast_mincontiglen" in qaa_args else 0
 		self.new_config_file = os.path.join(self.output_dir, "qaa.conf.xml")
 		with open(self.new_config_file, "w") as conf_out:
 			yaml.dump(self.config, conf_out, default_flow_style=False)
