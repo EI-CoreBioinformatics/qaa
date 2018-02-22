@@ -1,5 +1,6 @@
 import pkg_resources
 import os
+from os.path import join, dirname, basename
 import csv
 from collections import namedtuple
 import yaml
@@ -51,23 +52,46 @@ def loadPreCmd(command, is_dependency=True):
 
 
 class QAA_Runner(object):
-	def __init__(self, qaa_args):
+	def __init__(self, args, **kwargs):
+		def _create_input_stream(args):
+			stream, asm_path = list(), ""
+			for row in csv.reader(open(args.input), delimiter=","):
+				if args.runmode == "asm":
+					asm_path = join(args.output_dir, "assembly", row[0], row[0] + ".assembly.fasta")
+				elif args.runmode == "survey":
+					asm_path = join(args.output_dir, "qc", "tadpole", row[0], row[0] + "_tadpole_contigs.fasta")
+				new_row = [row[0], asm_path, "", row[2], row[3], args.busco_db]
+				if args.runmode == "ann":
+					ann = "prokka" if args.annotation in ("prokka", "both") else "ratt"
+					new_row.extend([join(args.output_dir, ann, row[0], row[0] + ".ffn"), join(args.output_dir, "annotation", ann, row[0], row[0] + ".faa")])
+				stream.append(new_row)
+			return stream
+
+
+		print("Assimilating kwargs ... ", end="", flush=True
+		from copy import copy
+		args = copy.copy(args)
+		for k in kwargs:
+			setattr(args, k, kwargs[k])
+		print(" done.")
+		print()
+
 		print("Configuring execution environment ... ", end="", flush=True)
-		self.output_dir = qaa_args.output_dir
+		self.output_dir = args.output_dir
 		self.report_dir = os.path.join(self.output_dir, "reports")
 		if not os.path.exists(self.report_dir):
 			os.makedirs(self.report_dir)
 		self.logs_dir = os.path.join(self.output_dir, "hpc_logs")
-		self.exe_env = ExecutionEnvironment(qaa_args, NOW, job_suffix=qaa_args.input + "_" + self.output_dir, log_dir=self.logs_dir)
+		self.exe_env = ExecutionEnvironment(args, NOW, job_suffix=args.input + "_" + self.output_dir, log_dir=self.logs_dir)
 		print("done.")
 		print(str(self.exe_env))
 		print()
-		self.runmode = qaa_args.runmode
+		self.runmode = args.runmode
 
-		if qaa_args.config:
+		if args.config:
 			print("Custom configuration file specified, overriding defaults ... ", end="", flush=True)
-			self.config = yaml.load(open(qaa_args.config))
-			self.config_file = qaa_args.config
+			self.config = yaml.load(open(args.config))
+			self.config_file = args.config
 			print("done.")
 			print()
 		else:
@@ -91,19 +115,19 @@ class QAA_Runner(object):
 
 		print()
 		
-		if "input_stream" in qaa_args:
-			self.config["samplesheet"] = qaa_args.input_stream
+		if "make_input_stream" in args:
+			self.config["samplesheet"] = _create_input_stream(args)
 			self.config["has_stream"] = True
 		else:
 			self.config["has_stream"] = False
-			self.config["samplesheet"] = qaa_args.input
+			self.config["samplesheet"] = args.input
 
 		self.config["out_dir"] = self.output_dir
 		self.config["etc"] = os.path.join(os.path.dirname(__file__), "..", "etc")
 		self.config["cwd"] = os.getcwd()
 
-		self.config["blobtools_run_bwa"] = not qaa_args.blobtools_no_bwa
-		requested_modes = qaa_args.qaa_mode.split(",")
+		self.config["blobtools_run_bwa"] = not args.blobtools_no_bwa
+		requested_modes = args.qaa_mode.split(",")
 		modes = ("geno", "genome", "tran", "transcriptome", "prot", "proteome")
 		invalid_modes = list(filter(lambda s:s not in modes, requested_modes))
 		if invalid_modes:
@@ -115,17 +139,17 @@ class QAA_Runner(object):
 				print("--qaa-mode: No valid mode provided. Valid modes are {}. Exiting.".format(",".join(modes)))
 				sys.exit(1)
 
-		self.config["survey_assembly"] = qaa_args.survey_assembly
-		self.config["no_blobtools"] = qaa_args.no_blobtools if "no_blobtools" in qaa_args else True
-		self.config["run_genome_module"] = qaa_args.survey_assembly or ("geno" in requested_modes or "genome" in requested_modes)
-		self.config["run_transcriptome_module"] = not qaa_args.survey_assembly and ("tran" in requested_modes or "transcriptome" in requested_modes)
-		self.config["run_proteome_module"] = not qaa_args.survey_assembly and ("prot" in requested_modes or "proteome" in requested_modes)
-		self.config["quast_mincontiglen"] = qaa_args.quast_mincontiglen if "quast_mincontiglen" in qaa_args else 0
+		self.config["survey_assembly"] = args.survey_assembly
+		self.config["no_blobtools"] = args.no_blobtools if "no_blobtools" in args else True
+		self.config["run_genome_module"] = args.survey_assembly or ("geno" in requested_modes or "genome" in requested_modes)
+		self.config["run_transcriptome_module"] = not args.survey_assembly and ("tran" in requested_modes or "transcriptome" in requested_modes)
+		self.config["run_proteome_module"] = not args.survey_assembly and ("prot" in requested_modes or "proteome" in requested_modes)
+		self.config["quast_mincontiglen"] = args.quast_mincontiglen if "quast_mincontiglen" in args else 0
 		self.new_config_file = os.path.join(self.output_dir, "qaa.conf.xml")
 		with open(self.new_config_file, "w") as conf_out:
 			yaml.dump(self.config, conf_out, default_flow_style=False)
 
-		self.unlock = qaa_args.unlock
+		self.unlock = args.unlock
 
 	def run(self):		
 		# return run_snakemake(os.path.join(os.path.dirname(__file__), "zzz", "qaa.smk.py"), self.output_dir, self.new_config_file, self.exe_env, dryrun=False, unlock=self.unlock)
