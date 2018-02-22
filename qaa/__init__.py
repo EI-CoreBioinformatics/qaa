@@ -68,9 +68,9 @@ class QAA_Runner(object):
 			return stream
 
 
-		print("Assimilating kwargs ... ", end="", flush=True
+		print("Assimilating kwargs ... ", end="", flush=True)
 		from copy import copy
-		args = copy.copy(args)
+		args = copy(args)
 		for k in kwargs:
 			setattr(args, k, kwargs[k])
 		print(" done.")
