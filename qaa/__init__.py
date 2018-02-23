@@ -60,7 +60,6 @@ class QAA_Runner(object):
 		print("done.")
 		print(str(self.exe_env))
 		print()
-		self.runmode = qaa_args.runmode
 
 		if qaa_args.config:
 			print("Custom configuration file specified, overriding defaults ... ", end="", flush=True)
@@ -113,10 +112,19 @@ class QAA_Runner(object):
 				print("--qaa-mode: No valid mode provided. Valid modes are {}. Exiting.".format(",".join(modes)))
 				sys.exit(1)
 
+	
 		self.config["survey_assembly"] = qaa_args.survey_assembly
 		self.config["run_genome_module"] = qaa_args.survey_assembly or ("geno" in requested_modes or "genome" in requested_modes)
 		self.config["run_transcriptome_module"] = not qaa_args.survey_assembly and ("tran" in requested_modes or "transcriptome" in requested_modes)
 		self.config["run_proteome_module"] = not qaa_args.survey_assembly and ("prot" in requested_modes or "proteome" in requested_modes)
+
+
+		# if self.config["survey_assembly"]:
+		# 	self.runmode = "survey"
+		# elif self.config["run_genome_module"]:
+		# 	self.runmode = "asm"
+		# elif self.config["run_proteome_module"] or self.config
+
 
 		self.new_config_file = os.path.join(self.output_dir, "qaa.conf.xml")
 		with open(self.new_config_file, "w") as conf_out:
@@ -149,14 +157,17 @@ class QAA_Runner(object):
 			with open(report_out, "w") as rep_out:
 				rfunc(qa_dir, out=rep_out)
 			
-		if self.runmode == "survey":
+		# if self.runmode == "survey":
+		if self.config["survey_assembly"]:
 			report_func(os.path.join(self.output_dir, "qa", "survey", "quast"), os.path.join(self.report_dir, "quast_survey_report.tsv"), compileQUASTReport)
 			# blobtools
-		elif self.runmode == "asm":
+		# elif self.runmode == "asm":
+		if self.config["run_genome_module"]:
 			report_func(os.path.join(self.output_dir, "qa", "asm", "quast"), os.path.join(self.report_dir, "quast_report.tsv"), compileQUASTReport)
 			# blobtools
 			report_func(os.path.join(self.output_dir, "qa", "asm", "busco", "geno"), os.path.join(self.report_dir, "busco_genome_report.tsv"), compileBUSCOReport)
-		elif self.runmode == "ann":
+		# elif self.runmode == "ann":
+		if self.config["run_transcriptome_module"] or self.config["run_proteome_module"]:
 			report_func(os.path.join(self.output_dir, "qa", "asm", "busco"), os.path.join(self.report_dir, "busco_report.tsv"), compileBUSCOReport)
 		
 	
