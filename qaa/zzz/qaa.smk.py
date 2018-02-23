@@ -59,8 +59,9 @@ for sample in INPUTFILES:
 	if config["run_genome_module"]:
 		TARGETS.extend([join(QUAST_DIR, sample, "quast.log"),
 				join(BUSCO_GENO_DIR, sample, "short_summary_{}.txt".format(sample)) if runbusco else "",
-				join(BLOB_DIR, sample, sample + ".blobDB.table.txt")
 				])
+		if not config["no_blobtools"]:
+			join(BLOB_DIR, sample, sample + ".blobDB.table.txt")		
 	if config["run_transcriptome_module"]:
 		TARGETS.append(join(BUSCO_TRAN_DIR, sample, "short_summary_{}.txt".format(sample)))
 	if config["run_proteome_module"]:
@@ -173,16 +174,18 @@ if config["run_genome_module"]:
 		params:
 			load = loadPreCmd(config["load"]["quast"]),
 			outdir = lambda wildcards: join(QUAST_DIR, wildcards.sample),
-			cmd = loadPreCmd(config["cmd"]["quast"], is_dependency=False)
+			cmd = loadPreCmd(config["cmd"]["quast"], is_dependency=False),
+			contiglen = config["quast_mincontiglen"]
 		log:
 			join(LOG_DIR, "{sample}.asm_quast_assembly.log")
 		threads:
 			2
 		shell:
-			"{params.load}" + TIME_CMD + \
-			" {params.cmd} -o {params.outdir} -t {threads} -L -s {input.assembly} --min-contig 1000 &> {log}"
+			"{params.load} (" + TIME_CMD + \
+			" {params.cmd} -o {params.outdir} -t {threads} -L -s {input.assembly} --min-contig {params.contiglen}" + \
+			" || touch {params.outdir}/transposed_report.tsv) &> {log}"
 
-	if config["blobtools_run_bwa"]:
+	if not config["no_blobtools"] and config["blobtools_run_bwa"]:
 		rule qa_blob_bwa_mem:
 			input:
 				reads = getReads,
@@ -202,42 +205,42 @@ if config["run_genome_module"]:
 				"{params.load}" + TIME_CMD + \
 				" bwa index -p {params.index} {input.assembly} &&" + \
 				" bwa mem -t {threads} {params.index} {input.reads[0]} {input.reads[1]} | samtools view -buSh - > {output.bam} 2> {log}"
+	if not config["no_blobtools"]:
+		rule qa_blob_blast:
+			input:
+				assembly = getAssembly
+			output:
+				tsv = join(BLOB_BLAST_DIR, "{sample}", "{sample}.blob_blast.tsv")
+			log:
+				join(LOG_DIR, "{sample}.blob_blast.log")
+			params:
+				outdir = lambda wildcards: join(BLOB_BLAST_DIR, wildcards.sample),
+				load = loadPreCmd(config["load"]["blob_blast"]),
+				blastdb = config["resources"]["blob_blastdb"]
+			threads:
+				8
+			shell:
+				"{params.load}" + TIME_CMD + \
+				" blastn -outfmt '6 qseqid staxids bitscore std' -max_target_seqs 10 -max_hsps 1 -evalue 1e-25 " + \
+				" -num_threads {threads} -query {input.assembly} -db {params.blastdb} -out {output.tsv} &> {log}"
 
-	rule qa_blob_blast:
-		input:
-			assembly = getAssembly
-		output:
-			tsv = join(BLOB_BLAST_DIR, "{sample}", "{sample}.blob_blast.tsv")
-		log:
-			join(LOG_DIR, "{sample}.blob_blast.log")
-		params:
-			outdir = lambda wildcards: join(BLOB_BLAST_DIR, wildcards.sample),
-			load = loadPreCmd(config["load"]["blob_blast"]),
-			blastdb = config["resources"]["blob_blastdb"]
-		threads:
-			8
-		shell:
-			"{params.load}" + TIME_CMD + \
-			" blastn -outfmt '6 qseqid staxids bitscore std' -max_target_seqs 10 -max_hsps 1 -evalue 1e-25 " + \
-			" -num_threads {threads} -query {input.assembly} -db {params.blastdb} -out {output.tsv} &> {log}"
-
-	rule qa_blobtools:
-		input:
-			bwa = join(BLOB_BWA_DIR, "{sample}", "{sample}.blob_bwa.bam") if config["blobtools_run_bwa"] else getBAM,
-			blast = join(BLOB_BLAST_DIR, "{sample}", "{sample}.blob_blast.tsv"),
-			assembly = getAssembly
-		output:
-			blobtable = join(BLOB_DIR, "{sample}", "{sample}.blobDB.table.txt")
-		log:
-			join(LOG_DIR, "{sample}.blobtools.log")
-		params:
-			prefix = lambda wildcards: join(BLOB_DIR, wildcards.sample, wildcards.sample),
-			load = loadPreCmd(config["load"]["blobtools"])
-		threads:
-			1
-		shell:
-			"{params.load}" + TIME_CMD + \
-			" blobtools create -t {input.blast} -b {input.bwa} -i {input.assembly} -o {params.prefix} -x bestsumorder &&" + \
-			" blobtools view -i {params.prefix}.blobDB.json -o $(dirname {params.prefix})/ -x bestsumorder -r species &&" + \
-			" blobtools blobplot -r species -l 1000 -i {params.prefix}.blobDB.json -o $(dirname {params.prefix})/ &> {log}"
+		rule qa_blobtools:
+			input:
+				bwa = join(BLOB_BWA_DIR, "{sample}", "{sample}.blob_bwa.bam") if config["blobtools_run_bwa"] else getBAM,
+				blast = join(BLOB_BLAST_DIR, "{sample}", "{sample}.blob_blast.tsv"),
+				assembly = getAssembly
+			output:
+				blobtable = join(BLOB_DIR, "{sample}", "{sample}.blobDB.table.txt")
+			log:
+				join(LOG_DIR, "{sample}.blobtools.log")
+			params:
+				prefix = lambda wildcards: join(BLOB_DIR, wildcards.sample, wildcards.sample),
+				load = loadPreCmd(config["load"]["blobtools"])
+			threads:
+				1
+			shell:
+				"{params.load}" + TIME_CMD + \
+				" blobtools create -t {input.blast} -b {input.bwa} -i {input.assembly} -o {params.prefix} -x bestsumorder &&" + \
+				" blobtools view -i {params.prefix}.blobDB.json -o $(dirname {params.prefix})/ -x bestsumorder -r species &&" + \
+				" blobtools blobplot -r species -l 1000 -i {params.prefix}.blobDB.json -o $(dirname {params.prefix})/ &> {log}"
 
