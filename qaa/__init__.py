@@ -63,7 +63,7 @@ class QAA_Runner(object):
 				new_row = [row[0], asm_path, "", row[2], row[3], args.busco_db]
 				if args.runmode == "ann":
 					ann = "prokka" if args.annotation in ("prokka", "both") else "ratt"
-					new_row.extend([join(args.output_dir, ann, row[0], row[0] + ".ffn"), join(args.output_dir, "annotation", ann, row[0], row[0] + ".faa")])
+					new_row.extend([join(args.output_dir, "annotation", ann, row[0], row[0] + ".ffn"), join(args.output_dir, "annotation", ann, row[0], row[0] + ".faa")])
 				stream.append(new_row)
 			return stream
 
