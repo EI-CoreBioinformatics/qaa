@@ -140,7 +140,8 @@ class QAA_Runner(object):
 				sys.exit(1)
 
 		self.config["survey_assembly"] = args.survey_assembly
-		self.config["no_blobtools"] = args.no_blobtools if "no_blobtools" in args else True
+		self.config["no_blobtools"] = args.no_blobtools if "no_blobtools" in args else False
+		self.config["no_busco"] = args.no_blobtools if "no_busco" in args else False
 		self.config["run_genome_module"] = args.survey_assembly or ("geno" in requested_modes or "genome" in requested_modes)
 		self.config["run_transcriptome_module"] = not args.survey_assembly and ("tran" in requested_modes or "transcriptome" in requested_modes)
 		self.config["run_proteome_module"] = not args.survey_assembly and ("prot" in requested_modes or "proteome" in requested_modes)

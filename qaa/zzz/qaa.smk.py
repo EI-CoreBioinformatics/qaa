@@ -34,7 +34,7 @@ ASSEMBLY_DIR = join(OUTPUTDIR, "assembly")
 # BUSCO environment
 BUSCO_INIT_DIR = join(config["etc"], "util", "busco_init_dir")
 BUSCO_DATA_PATH = config["resources"]["busco_databases"]
-BUSCO_DATA = "/tgac/workarea/group-pb/schudomc_bact/bact-grrl/data/busco/bacteria_odb9"
+# BUSCO_DATA = "/tgac/workarea/group-pb/schudomc_bact/bact-grrl/data/busco/bacteria_odb9"
 CWD = os.getcwd()
 
 def getBUSCOData(sample):
@@ -54,14 +54,14 @@ def getProteins(wildcards):
 
 # ASM_Sample = namedtuple("ASM_Sample", "id assembly bamfile r1 r2 busco_id transcripts proteins".split(" "))
 TARGETS = list()
-runbusco = not config["survey_assembly"]
+# runbusco = not config["survey_assembly"]
 for sample in INPUTFILES:
 	if config["run_genome_module"]:
-		TARGETS.extend([join(QUAST_DIR, sample, "quast.log"),
-				join(BUSCO_GENO_DIR, sample, "short_summary_{}.txt".format(sample)) if runbusco else "",
-				])
+		TARGETS.append(join(QUAST_DIR, sample, "quast.log"))
 		if not config["no_blobtools"]:
-			join(BLOB_DIR, sample, sample + ".blobDB.table.txt")		
+			TARGETS.append(join(BLOB_DIR, sample, sample + ".blobDB.table.txt"))
+		if not config["no_busco"]:
+			TARGETS.append(join(BUSCO_GENO_DIR, sample, "short_summary_{}.txt".format(sample))) # if runbusco else "",)
 	if config["run_transcriptome_module"]:
 		TARGETS.append(join(BUSCO_TRAN_DIR, sample, "short_summary_{}.txt".format(sample)))
 	if config["run_proteome_module"]:
@@ -139,7 +139,7 @@ if config["run_transcriptome_module"]:
 			"" # " &> {log}"
 		
 if config["run_genome_module"]:
-	if not config["survey_assembly"]:
+	if not config["no_busco"]: # True: # not config["survey_assembly"]:
 		rule qa_busco_geno:
 			input:
 				busco_input = getAssembly
@@ -204,7 +204,9 @@ if config["run_genome_module"]:
 			shell:
 				"{params.load}" + TIME_CMD + \
 				" bwa index -p {params.index} {input.assembly} &&" + \
-				" bwa mem -t {threads} {params.index} {input.reads[0]} {input.reads[1]} | samtools view -buSh - > {output.bam} 2> {log}"
+				" bwa mem -t {threads} {params.index} {input.reads[0]} {input.reads[1]} | samtools view -buSh - |" + \
+				" samtools sort -o {output.bam} -" + \
+				" 2> {log}"
 	if not config["no_blobtools"]:
 		rule qa_blob_blast:
 			input:
