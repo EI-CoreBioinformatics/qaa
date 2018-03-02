@@ -163,8 +163,8 @@ if config["run_genome_module"]:
 				" run_BUSCO.py -i " + join(config["cwd"], "{input.busco_input}") + " -c {threads} -m {params.busco_mode}" + \
 				" --force -t {params.tmp} -l {params.busco_data} -o {wildcards.sample} &> {log} && cd " + CWD + \
 				" && mkdir -p {params.final_outdir} && mv -v {params.outdir}/* {params.final_outdir}/" + \
-				" && rm -rf {params.outdir}" + \
-				" &> {log}"
+				" && rm -rf {params.outdir} && touch {params.final_outdir}/short_summary_{wildcards.sample}.txt" + \
+				"" # &> {log}"
 
 	rule qa_quast:
 		input:
@@ -242,7 +242,9 @@ if config["run_genome_module"]:
 				1
 			shell:
 				"{params.load}" + TIME_CMD + \
-				" blobtools create -t {input.blast} -b {input.bwa} -i {input.assembly} -o {params.prefix} -x bestsumorder &&" + \
-				" blobtools view -i {params.prefix}.blobDB.json -o $(dirname {params.prefix})/ -x bestsumorder -r species &&" + \
+				# " blobtools create -t {input.blast} -b {input.bwa} -i {input.assembly} -o {params.prefix} -x bestsumorder &&" + \
+				" blobtools create -t {input.blast} -b {input.bwa} -i {input.assembly} -o {params.prefix} &&" + \
+				# " blobtools view -i {params.prefix}.blobDB.json -o $(dirname {params.prefix})/ -x bestsumorder -r species &&" + \
+				" blobtools view -i {params.prefix}.blobDB.json -o $(dirname {params.prefix})/ -r species &&" + \
 				" blobtools blobplot -r species -l 1000 -i {params.prefix}.blobDB.json -o $(dirname {params.prefix})/ &> {log}"
 
