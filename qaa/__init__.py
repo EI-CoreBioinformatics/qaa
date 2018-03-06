@@ -8,6 +8,7 @@ import yaml
 from eicore.external_process.snakemake_helper import *
 from qaa.reporting.busco_report import compileBUSCOReport
 from qaa.reporting.quast_report import compileQUASTReport
+from qaa.reporting.blobtools_report import compileBlobReport
 
 __title__ = "qaa"
 __author__ = 'Christian Schudoma (cschu)'
@@ -180,12 +181,19 @@ class QAA_Runner(object):
 		# if self.runmode == "survey":
 		if self.config["survey_assembly"]:
 			report_func(os.path.join(self.output_dir, "qa", "survey", "quast"), os.path.join(self.report_dir, "quast_survey_report.tsv"), compileQUASTReport)
-			# blobtools
+			if not self.config["no_busco"]:
+				report_func(os.path.join(self.output_dir, "qa", "survey", "busco", "geno"), os.path.join(self.report_dir, "busco_survey_report.tsv"), compileBUSCOReport)
+			if not self.config["no_blobtools"]:
+				report_func(os.path.join(self.output_dir, "qa", "survey", "blobtools", "blob"), os.path.join(self.report_dir, "blobtools_survey_report.tsv"), compileBlobReport)
 		# elif self.runmode == "asm":
 		if self.config["run_genome_module"]:
 			report_func(os.path.join(self.output_dir, "qa", "asm", "quast"), os.path.join(self.report_dir, "quast_report.tsv"), compileQUASTReport)
-			# blobtools
-			report_func(os.path.join(self.output_dir, "qa", "asm", "busco", "geno"), os.path.join(self.report_dir, "busco_genome_report.tsv"), compileBUSCOReport)
+			if not self.config["no_busco"]:
+				report_func(os.path.join(self.output_dir, "qa", "asm", "busco", "geno"), os.path.join(self.report_dir, "busco_genome_report.tsv"), compileBUSCOReport)
+			if not self.config["no_blobtools"]:
+				report_func(os.path.join(self.output_dir, "qa", "asm", "blobtools", "blob"), os.path.join(self.report_dir, "blobtools_report.tsv"), compileBlobReport)
+				
+
 		# elif self.runmode == "ann":
 		if self.config["run_transcriptome_module"] or self.config["run_proteome_module"]:
 			report_func(os.path.join(self.output_dir, "qa", "asm", "busco"), os.path.join(self.report_dir, "busco_report.tsv"), compileBUSCOReport)
