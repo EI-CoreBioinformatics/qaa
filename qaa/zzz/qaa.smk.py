@@ -16,6 +16,7 @@ with open("qaa-inputfiles.txt", "w") as input_out:
 OUTPUTDIR = config["out_dir"]
 
 QA_DIR = join(OUTPUTDIR, "qa", "survey" if config["survey_assembly"] else "asm")
+QC_DIR = join(OUTPUTDIR, "qc")
 LOG_DIR = join(QA_DIR, "log")
 
 QUAST_DIR = join(QA_DIR, "quast")
@@ -61,11 +62,12 @@ for sample in INPUTFILES:
 		if not config["no_blobtools"]:
 			TARGETS.append(join(BLOB_DIR, sample, sample + ".blobDB.table.txt"))
 		if not config["no_busco"]:
-			TARGETS.append(join(BUSCO_GENO_DIR, sample, "short_summary_{}.txt".format(sample))) # if runbusco else "",)
+			# TARGETS.append(join(BUSCO_GENO_DIR, sample, "short_summary_{}.txt".format(sample))) # if runbusco else "",)
+			TARGETS.append(join(BUSCO_GENO_DIR, sample, sample + "_short_summary.txt"))
 	if config["run_transcriptome_module"]:
-		TARGETS.append(join(BUSCO_TRAN_DIR, sample, "short_summary_{}.txt".format(sample)))
+		TARGETS.append(join(BUSCO_TRAN_DIR, sample, sample + "_short_summary.txt"))
 	if config["run_proteome_module"]:
-		TARGETS.append(join(BUSCO_PROT_DIR, sample, "short_summary_{}.txt".format(sample)))
+		TARGETS.append(join(BUSCO_PROT_DIR, sample, sample + "_short_summary.txt"))
 
 TARGETS = list(filter(lambda t:t, TARGETS))
 
@@ -77,15 +79,44 @@ with open("qaa-targets.txt", "w") as targets_out:
 
 localrules: all
 
-rule all:
-	input: TARGETS
+if not config["no_multiqc"]:
+	rule all:
+		input: 
+			TARGETS
+		params:
+			load = loadPreCmd(config["load"]["multiqc"]),
+			mqc_config = config["resources"]["multiqc_config"],
+			datadir = OUTPUTDIR, # QC_DIR,
+			outdir = config["multiqc_dir"], # join(OUTPUTDIR, "reports", "multiqc", "qc"),
+			prefix = config["project_prefix"] + "_survey" if config["survey_assembly"] else "_asm",
+			ignore_qc = join(QC_DIR, "fastqc", "bbduk", "*"),
+			ignore_qa = join(QA_DIR, "log"),
+			mqc_files = "MQC_LIST.txt",
+			fastqcdir = join(QC_DIR, "fastqc", "bbnorm"),
+			katdir = join(QC_DIR, "kat"),
+			buscodir = join(QA_DIR, "busco", "geno"),
+			quastdir = join(QA_DIR, "quast")
+		log:
+			"readqc_multiqc.log"
+		shell:
+			"{params.load}" + \
+			" find {params.fastqcdir} -name 'fastqc_data.txt' > {params.mqc_files} &&" + \
+			" find {params.katdir} -name '*.kat' >> {params.mqc_files} &&" + \
+			" find {params.buscodir} -name '*short_summary.txt' >> {params.mqc_files} &&" + \
+			" find {params.quastdir} -name 'report.tsv' >> {params.mqc_files} &&" + \
+			" multiqc -f -n {params.prefix}_multiqc_report -i {params.prefix} -z -c {params.mqc_config} -o {params.outdir} --file-list {params.mqc_files} > {log}"
+			# " multiqc -f -n {params.prefix}_readqc_multiqc_report -i {params.prefix} -z -c {params.mqc_config} -o {params.outdir} -x {params.ignore_qc} -x {params.ignore_qa} {params.datadir} > {log}"
+else:
+	rule all:
+		input:
+			TARGETS
 
 if config["run_proteome_module"]:
 	rule qa_busco_prot:
 		input:
 			busco_input = getProteins
 		output:
-			join(BUSCO_PROT_DIR, "{sample}", "short_summary_{sample}.txt")
+			join(BUSCO_PROT_DIR, "{sample}", "{sample}_short_summary.txt")
 		log:
 			join(config["cwd"], LOG_DIR, "{sample}_busco_prot.log")
 		params:
@@ -105,6 +136,7 @@ if config["run_proteome_module"]:
 			" --force -t {params.tmp} -l {params.busco_data} -o {wildcards.sample} &> {log} && cd " + CWD + \
 			" && mkdir -p {params.final_outdir} && mv -v {params.outdir}/* {params.final_outdir}/" + \
 			" && rm -rf {params.outdir}" + \
+			" && mv {params.final_outdir}/short_summary_{wildcards.sample}.txt {params.final_outdir}/{wildcards.sample}_short_summary.txt" + \
 			"" # " &> {log}"
 
 
@@ -116,7 +148,7 @@ if config["run_transcriptome_module"]:
 		input:
 			busco_input = getTranscripts
 		output:
-			join(BUSCO_TRAN_DIR, "{sample}", "short_summary_{sample}.txt")
+			join(BUSCO_TRAN_DIR, "{sample}", "{sample}_short_summary.txt")
 		log:
 			join(config["cwd"], LOG_DIR, "{sample}_busco_tran.log")
 		params:
@@ -136,6 +168,7 @@ if config["run_transcriptome_module"]:
 			" --force -t {params.tmp} -l {params.busco_data} -o {wildcards.sample} &> {log} && cd " + CWD + \
 			" && mkdir -p {params.final_outdir} && mv -v {params.outdir}/* {params.final_outdir}/" + \
 			" && rm -rf {params.outdir}" + \
+			" && mv {params.final_outdir}/short_summary_{wildcards.sample}.txt {params.final_outdir}/{wildcards.sample}_short_summary.txt" + \
 			"" # " &> {log}"
 		
 if config["run_genome_module"]:
@@ -144,7 +177,8 @@ if config["run_genome_module"]:
 			input:
 				busco_input = getAssembly
 			output:
-				join(BUSCO_GENO_DIR, "{sample}", "short_summary_{sample}.txt")
+				# join(BUSCO_GENO_DIR, "{sample}", "short_summary_{sample}.txt")
+				join(BUSCO_GENO_DIR, "{sample}", "{sample}_short_summary.txt")
 			log:	
 				join(config["cwd"], LOG_DIR, "{sample}_busco_geno.log")
 			params:
@@ -164,6 +198,7 @@ if config["run_genome_module"]:
 				" --force -t {params.tmp} -l {params.busco_data} -o {wildcards.sample} &> {log} && cd " + CWD + \
 				" && mkdir -p {params.final_outdir} && mv -v {params.outdir}/* {params.final_outdir}/" + \
 				" && rm -rf {params.outdir} && touch {params.final_outdir}/short_summary_{wildcards.sample}.txt" + \
+				" && mv {params.final_outdir}/short_summary_{wildcards.sample}.txt {params.final_outdir}/{wildcards.sample}_short_summary.txt" + \
 				"" # &> {log}"
 
 	rule qa_quast:
@@ -242,9 +277,7 @@ if config["run_genome_module"]:
 				1
 			shell:
 				"{params.load}" + TIME_CMD + \
-				# " blobtools create -t {input.blast} -b {input.bwa} -i {input.assembly} -o {params.prefix} -x bestsumorder &&" + \
 				" blobtools create -t {input.blast} -b {input.bwa} -i {input.assembly} -o {params.prefix} &&" + \
-				# " blobtools view -i {params.prefix}.blobDB.json -o $(dirname {params.prefix})/ -x bestsumorder -r species &&" + \
 				" blobtools view -i {params.prefix}.blobDB.json -o $(dirname {params.prefix})/ -r species &&" + \
 				" blobtools blobplot -r species -l 1000 -i {params.prefix}.blobDB.json -o $(dirname {params.prefix})/ &> {log}"
 

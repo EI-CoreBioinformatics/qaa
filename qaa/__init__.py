@@ -140,9 +140,12 @@ class QAA_Runner(object):
 				print("--qaa-mode: No valid mode provided. Valid modes are {}. Exiting.".format(",".join(modes)))
 				sys.exit(1)
 
+		self.config["project_prefix"] = args.project_prefix if "project_prefix" in args else "dummy_project"
+		self.config["no_multiqc"] = args.no_multiqc if "no_multiqc" in args else False
+		self.config["multiqc_dir"] = args.multiqc_dir if "multiqc_dir" in args else "."
 		self.config["survey_assembly"] = args.survey_assembly
 		self.config["no_blobtools"] = args.no_blobtools if "no_blobtools" in args else False
-		self.config["no_busco"] = args.no_blobtools if "no_busco" in args else False
+		self.config["no_busco"] = args.no_busco if "no_busco" in args else False
 		self.config["run_genome_module"] = args.survey_assembly or ("geno" in requested_modes or "genome" in requested_modes)
 		self.config["run_transcriptome_module"] = not args.survey_assembly and ("tran" in requested_modes or "transcriptome" in requested_modes)
 		self.config["run_proteome_module"] = not args.survey_assembly and ("prot" in requested_modes or "proteome" in requested_modes)
@@ -153,7 +156,17 @@ class QAA_Runner(object):
 
 		self.unlock = args.unlock
 
-	def run(self):		
+	def _clean_blobtools_trash(self):
+		import glob		
+		for f in glob.glob(os.path.join(os.getcwd(), "*.blob_bwa.bam.cov")):
+			try:
+				if os.path.isfile(f):
+					os.unlink(f)
+			except Exception as e:
+				print(e)
+				
+
+	def run(self):
 		# return run_snakemake(os.path.join(os.path.dirname(__file__), "zzz", "qaa.smk.py"), self.output_dir, self.new_config_file, self.exe_env, dryrun=False, unlock=self.unlock)
 		"""
 		# was worth a try...
@@ -170,6 +183,9 @@ class QAA_Runner(object):
 		run_result = run_snakemake(os.path.join(os.path.dirname(__file__), "zzz", "qaa.smk.py"), self.output_dir, self.new_config_file, self.exe_env, dryrun=False, unlock=self.unlock)
 
 		self.report()
+
+		self._clean_blobtools_trash()
+		
 
 		return run_result
 

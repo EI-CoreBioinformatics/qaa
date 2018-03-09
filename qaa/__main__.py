@@ -71,6 +71,8 @@ def main():
 	parser.add_argument("--survey-assembly", action="store_true", help="If True, then this qaa will only run quast and blobtools. This mode is for assessing assemble-ability of a set of reads as well as a closer look at taxonomic composition of the data. genome-mode is implied and prot/tran mode requests are ignored. [off/False]")
 	parser.add_argument("--no-blobtools", action="store_true", help="Avoids failing blobtools on low quality assemblies. BGRRL helper function [False]")
 	parser.add_argument("--no-busco", action="store_true", help="Avoids failing busco on low quality assemblies. BGRRL helper function [False]")
+	parser.add_argument("--no-multiqc", action="store_true", help="Turn off multiqc report for survey checks. [False]")
+	parser.add_argument("--multiqc-dir", type=str, default=".")
 	# parser.add_argument("--safe-survey-assembly", action="store_true", help="Avoids failing blobtools and/or busco analyses on low quality assemblies. BGRRL helper function. [False]")
 	parser.add_argument("--quast-mincontiglen", type=int, default=1000, help="Minimum contig length [bp] for quast to consider [1000]")
 	parser.add_argument("--config", help="Configuration file for the pipeline. This file specifies details for accessing services and commands to be executed prior to running each pipeline tool.  Default config file is: " + DEFAULT_CONFIG_FILE)

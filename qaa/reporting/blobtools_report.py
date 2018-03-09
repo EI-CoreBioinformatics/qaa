@@ -1,5 +1,6 @@
 import sys
 import os
+from os.path import join
 import csv
 
 from collections import Counter, namedtuple
