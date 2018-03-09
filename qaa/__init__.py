@@ -116,7 +116,7 @@ class QAA_Runner(object):
 
 		print()
 		
-		if "make_input_stream" in args:
+		if False: # "make_input_stream" in args:
 			self.config["samplesheet"] = _create_input_stream(args)
 			self.config["has_stream"] = True
 		else:
