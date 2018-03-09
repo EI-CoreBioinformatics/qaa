@@ -9,6 +9,7 @@ def compileBUSCOReport(busco_dir, out=sys.stdout):
         if summary:
             with open(os.path.join(cdir, summary[0])) as _in:
                 sample = summary[0].replace("short_summary", "").strip("_").strip(".txt")
+                mode = "NA"
                 for line in _in:
                     if line.startswith('# BUSCO was run in mode:'):
                         mode = re.search(' (transcriptome|proteins|genome)', line).group().strip()

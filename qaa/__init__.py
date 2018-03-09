@@ -87,7 +87,7 @@ class QAA_Runner(object):
 		print("done.")
 		print(str(self.exe_env))
 		print()
-		self.runmode = args.runmode
+		self.runmode = args.runmode if "runmode" in args else "asm"
 
 		if args.config:
 			print("Custom configuration file specified, overriding defaults ... ", end="", flush=True)
