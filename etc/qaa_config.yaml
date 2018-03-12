@@ -8,7 +8,7 @@ load:
   blob_bwa: "source bwa-0.7.16a && source samtools-1.5"
   blob_blast: "source blast-2.6.0"
   blobtools: "source python_anaconda-2.5.0 && source blobtools-0.9.19 && source samtools-1.5"
-  multiqc: "source multiqc-1.3_dev"
+  multiqc: "source multiqc-1.5_ei"
 
 cmd:
   quast: "python2 /tgac/software/testing/quast/4.3/x86_64/bin/quast.py"

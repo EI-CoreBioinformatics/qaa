@@ -88,7 +88,7 @@ if not config["no_multiqc"]:
 			mqc_config = config["resources"]["multiqc_config"],
 			datadir = OUTPUTDIR, # QC_DIR,
 			outdir = config["multiqc_dir"], # join(OUTPUTDIR, "reports", "multiqc", "qc"),
-			prefix = config["project_prefix"] + "_survey" if config["survey_assembly"] else "_asm",
+			prefix = config["project_prefix"] + ("_survey" if config["survey_assembly"] else "_asm"),
 			ignore_qc = join(QC_DIR, "fastqc", "bbduk", "*"),
 			ignore_qa = join(QA_DIR, "log"),
 			mqc_files = "MQC_LIST.txt",
@@ -96,7 +96,7 @@ if not config["no_multiqc"]:
 			katdir = join(QC_DIR, "kat"),
 			buscodir = join(QA_DIR, "busco", "geno"),
 			quastdir = join(QA_DIR, "quast"),
-			samplesheet = config["samplesheet"]
+			samplesheet = config["full_samplesheet"]
 		log:
 			"readqc_multiqc.log"
 		shell:
@@ -105,7 +105,7 @@ if not config["no_multiqc"]:
 			" find {params.katdir} -name '*.kat' >> {params.mqc_files}.tmp &&" + \
 			" find {params.buscodir} -name '*short_summary.txt' >> {params.mqc_files}.tmp &&" + \
 			" find {params.quastdir} -name 'report.tsv' >> {params.mqc_files}.tmp &&" + \
-			" grep -F f <(cut -f 1 -d , {params.samplesheet}) {params.mqc_files}.tmp > {params.mqc_files} &&" + \
+			" grep -F -f <(cut -f 1 -d , {params.samplesheet}) {params.mqc_files}.tmp > {params.mqc_files} &&" + \
 			" rm {params.mqc_files}.tmp &&" + \
 			" multiqc -f -n {params.prefix}_multiqc_report -i {params.prefix} -z -c {params.mqc_config} -o {params.outdir} --file-list {params.mqc_files} > {log}"
 			# " multiqc -f -n {params.prefix}_readqc_multiqc_report -i {params.prefix} -z -c {params.mqc_config} -o {params.outdir} -x {params.ignore_qc} -x {params.ignore_qa} {params.datadir} > {log}"

@@ -115,13 +115,14 @@ class QAA_Runner(object):
 			print("done.")
 
 		print()
-		
-		if False: # "make_input_stream" in args:
+	                	
+		if "make_input_stream" in args:
 			self.config["samplesheet"] = _create_input_stream(args)
 			self.config["has_stream"] = True
+			self.config["full_samplesheet"] = args.input
 		else:
 			self.config["has_stream"] = False
-			self.config["samplesheet"] = args.input
+			self.config["full_samplesheet"] = self.config["samplesheet"] = args.input
 
 		self.config["out_dir"] = self.output_dir
 		self.config["etc"] = os.path.join(os.path.dirname(__file__), "..", "etc")
