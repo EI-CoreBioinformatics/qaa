@@ -141,6 +141,7 @@ class QAA_Runner(object):
 				print("--qaa-mode: No valid mode provided. Valid modes are {}. Exiting.".format(",".join(modes)))
 				sys.exit(1)
 
+		self.config["normalized"] = args.normalized if "normalized" in args else False
 		self.config["project_prefix"] = args.project_prefix if "project_prefix" in args else "dummy_project"
 		self.config["no_multiqc"] = args.no_multiqc if "no_multiqc" in args else False
 		self.config["multiqc_dir"] = args.multiqc_dir if "multiqc_dir" in args else "."
