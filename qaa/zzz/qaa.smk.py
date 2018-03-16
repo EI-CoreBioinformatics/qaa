@@ -69,6 +69,9 @@ for sample in INPUTFILES:
 	if config["run_proteome_module"]:
 		TARGETS.append(join(BUSCO_PROT_DIR, sample, sample + "_short_summary.txt"))
 
+if not config["no_multiqc"]:
+	TARGETS.append(join(config["multiqc_dir"], config["project_prefix"] + ("_survey" if config["survey_assembly"] else "_asm") + "_multiqc_report.html"))
+
 TARGETS = list(filter(lambda t:t, TARGETS))
 
 print("CONFIG")
@@ -77,12 +80,18 @@ print(config)
 with open("qaa-targets.txt", "w") as targets_out:
 	print(*TARGETS, sep="\n", file=targets_out)
 
-localrules: all
+localrules: all, qaa_multiqc
+
+rule all:
+	input:
+		TARGETS
 
 if not config["no_multiqc"]:
-	rule all:
+	rule qaa_multiqc:
 		input: 
-			TARGETS
+			TARGETS[:-1]
+		output:
+			join(config["multiqc_dir"], config["project_prefix"] + ("_survey" if config["survey_assembly"] else "_asm") + "_multiqc_report.html")	
 		params:
 			load = loadPreCmd(config["load"]["multiqc"]),
 			mqc_config = config["resources"]["multiqc_config"],
@@ -92,27 +101,27 @@ if not config["no_multiqc"]:
 			ignore_qc = join(QC_DIR, "fastqc", "bbduk", "*"),
 			ignore_qa = join(QA_DIR, "log"),
 			mqc_files = "MQC_LIST.txt",
-			fastqcdir = join(QC_DIR, "fastqc", "bbnorm"),
+			fastqcdir = join(QC_DIR, "fastqc", "bbnorm" if config["normalized"] else "bbduk"),
 			katdir = join(QC_DIR, "kat"),
 			buscodir = join(QA_DIR, "busco", "geno"),
 			quastdir = join(QA_DIR, "quast"),
-			samplesheet = config["full_samplesheet"]
+			samplesheet = config["full_samplesheet"],
+			mode = "survey" if config["survey_assembly"] else "asm"
 		log:
 			"readqc_multiqc.log"
 		shell:
 			"{params.load}" + \
-			" find {params.fastqcdir} -name 'fastqc_data.txt' > {params.mqc_files}.tmp &&" + \
-			" find {params.katdir} -name '*.kat' >> {params.mqc_files}.tmp &&" + \
-			" find {params.buscodir} -name '*short_summary.txt' >> {params.mqc_files}.tmp &&" + \
+			" find {params.buscodir} -name '*short_summary.txt' > {params.mqc_files}.tmp &&" + \
 			" find {params.quastdir} -name 'report.tsv' >> {params.mqc_files}.tmp &&" + \
+			" if [[ -d \"{params.katdir}\" && {params.mode} == \"survey\" ]]; then find {params.katdir} -name '*.json' >> {params.mqc_files}.tmp; fi &&" + \
+			" if [[ -d \"{params.fastqcdir}\" && {params.mode} == \"survey\" ]]; then find {params.fastqcdir} -name 'fastqc_data.txt' >> {params.mqc_files}.tmp; fi &&" + \
 			" grep -F -f <(cut -f 1 -d , {params.samplesheet}) {params.mqc_files}.tmp > {params.mqc_files} &&" + \
 			" rm {params.mqc_files}.tmp &&" + \
 			" multiqc -f -n {params.prefix}_multiqc_report -i {params.prefix} -z -c {params.mqc_config} -o {params.outdir} --file-list {params.mqc_files} > {log}"
-			# " multiqc -f -n {params.prefix}_readqc_multiqc_report -i {params.prefix} -z -c {params.mqc_config} -o {params.outdir} -x {params.ignore_qc} -x {params.ignore_qa} {params.datadir} > {log}"
-else:
-	rule all:
-		input:
-			TARGETS
+
+
+
+
 
 if config["run_proteome_module"]:
 	rule qa_busco_prot:
