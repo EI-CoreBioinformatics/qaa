@@ -54,7 +54,9 @@ def loadPreCmd(command, is_dependency=True):
 
 class QAA_Runner(object):
 	def __init__(self, args, **kwargs):
+		print("QAA_RUNNER:__init__")
 		def _create_input_stream(args):
+			print("QAA_RUNNER:_create_input_stream", args, sep="\n")
 			stream, asm_path = list(), ""
 			for row in csv.reader(open(args.input), delimiter=","):
 				if args.runmode == "asm":
@@ -195,7 +197,10 @@ class QAA_Runner(object):
 		def report_func(qa_dir, report_out, rfunc):
 			with open(report_out, "w") as rep_out:
 				rfunc(qa_dir, out=rep_out)
-			
+
+		print("QAA_CONFIG_!!!")
+		print(self.config)
+
 		# if self.runmode == "survey":
 		if self.config["survey_assembly"]:
 			report_func(os.path.join(self.output_dir, "qa", "survey", "quast"), os.path.join(self.report_dir, "quast_survey_report.tsv"), compileQUASTReport)
