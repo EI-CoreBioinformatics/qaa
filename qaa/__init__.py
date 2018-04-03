@@ -144,7 +144,12 @@ class QAA_Runner(object):
 				sys.exit(1)
 
 		self.config["normalized"] = args.normalized if "normalized" in args else False
-		self.config["project_prefix"] = args.project_prefix if "project_prefix" in args else "dummy_project"
+		# self.config["misc"]["project"] = args.project_prefix if "project_prefix" in args else "dummy_project"
+		try:
+			self.config["misc"]["project"] = args.project_prefix
+		except:
+			pass
+
 		self.config["no_multiqc"] = args.no_multiqc if "no_multiqc" in args else False
 		self.config["multiqc_dir"] = args.multiqc_dir if "multiqc_dir" in args else "."
 		self.config["survey_assembly"] = args.survey_assembly
