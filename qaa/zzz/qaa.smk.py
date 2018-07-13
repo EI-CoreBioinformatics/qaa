@@ -284,12 +284,13 @@ if config["run_genome_module"]:
 				join(LOG_DIR, "{sample}.blobtools.log")
 			params:
 				prefix = lambda wildcards: join(BLOB_DIR, wildcards.sample, wildcards.sample),
-				load = loadPreCmd(config["load"]["blobtools"])
+				load = loadPreCmd(config["load"]["blobtools"]),
+                                taxlevel = "family"
 			threads:
 				1
 			shell:
 				"{params.load}" + TIME_CMD + \
 				" blobtools create -t {input.blast} -b {input.bwa} -i {input.assembly} -o {params.prefix} &&" + \
-				" blobtools view -i {params.prefix}.blobDB.json -o $(dirname {params.prefix})/ -r species &&" + \
-				" blobtools blobplot -r species -l 1000 -i {params.prefix}.blobDB.json -o $(dirname {params.prefix})/ &> {log}"
+				" blobtools view -i {params.prefix}.blobDB.json -o $(dirname {params.prefix})/ -r {params.taxlevel} &&" + \
+				" blobtools blobplot -r {params.taxlevel} -l 1000 -i {params.prefix}.blobDB.json -o $(dirname {params.prefix})/ &> {log}"
 
