@@ -169,19 +169,6 @@ class QAA_Runner(object):
 				
 
 	def run(self):
-		# return run_snakemake(os.path.join(os.path.dirname(__file__), "zzz", "qaa.smk.py"), self.output_dir, self.new_config_file, self.exe_env, dryrun=False, unlock=self.unlock)
-		"""
-		# was worth a try...
-		print("RRRRRRRUN...")
-		from snakemake import snakemake
-		cluster_cfg = self.exe_env.hpc_config if self.exe_env.use_scheduler else None
-		cluster = (self.exe_env.sub_cmd + self.exe_env.res_cmd if not self.exe_env.use_drmaa else None) if self.exe_env.use_scheduler else None
-		drmaa = self.exe_env.res_cmd if self.exe_env.use_drmaa else None
-		snakefile = os.path.join(os.path.dirname(__file__), "zzz", "qaa.smk.py")
-		
-		return snakemake(snakefile, cores=self.exe_env.max_cores, local_cores=self.exe_env.max_cores, nodes=self.exe_env.max_nodes, config=self.config, workdir=".", cluster_config=cluster_cfg, cluster=cluster, drmaa=drmaa, unlock=self.unlock, printshellcmds=True, printreason=True, stats=os.path.join(self.output_dir, os.path.basename(snakefile) + "-" + NOW + ".stats"), jobname="qaa.{rulename}.{jobid}", force_incomplete=True, latency_wait=60 if self.exe_env.use_scheduler or self.exe_env.use_drmaa else 1, printdag=False, dryrun=False, forceall=False, verbose=True)
-		"""
-
 		run_result = run_snakemake(os.path.join(os.path.dirname(__file__), "zzz", "qaa.smk.py"), self.output_dir, self.new_config_file, self.exe_env, dryrun=False, unlock=self.unlock)
 
 		self.report()
