@@ -70,7 +70,7 @@ for sample in INPUTFILES:
 		TARGETS.append(join(BUSCO_PROT_DIR, sample, sample + "_short_summary.txt"))
 
 if not config["no_multiqc"]:
-	TARGETS.append(join(config["multiqc_dir"], config["project_prefix"] + ("_survey" if config["survey_assembly"] else "_asm") + "_multiqc_report.html"))
+	TARGETS.append(join(config["multiqc_dir"], config["misc"]["project"] + ("_survey" if config["survey_assembly"] else "_asm") + "_multiqc_report.html"))
 
 TARGETS = list(filter(lambda t:t, TARGETS))
 
@@ -91,13 +91,13 @@ if not config["no_multiqc"]:
 		input: 
 			TARGETS[:-1]
 		output:
-			join(config["multiqc_dir"], config["project_prefix"] + ("_survey" if config["survey_assembly"] else "_asm") + "_multiqc_report.html")	
+			join(config["multiqc_dir"], config["misc"]["project"] + ("_survey" if config["survey_assembly"] else "_asm") + "_multiqc_report.html")	
 		params:
 			load = loadPreCmd(config["load"]["multiqc"]),
 			mqc_config = config["resources"]["multiqc_config"],
 			datadir = OUTPUTDIR, # QC_DIR,
 			outdir = config["multiqc_dir"], # join(OUTPUTDIR, "reports", "multiqc", "qc"),
-			prefix = config["project_prefix"] + ("_survey" if config["survey_assembly"] else "_asm"),
+			prefix = config["misc"]["project"] + ("_survey" if config["survey_assembly"] else "_asm"),
 			ignore_qc = join(QC_DIR, "fastqc", "bbduk", "*"),
 			ignore_qa = join(QA_DIR, "log"),
 			mqc_files = "MQC_LIST.txt",
