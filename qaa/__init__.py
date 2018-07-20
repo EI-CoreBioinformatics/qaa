@@ -37,6 +37,31 @@ class QAA_ArgumentsAdapter(object):
             setattr(self, k, kwargs[k])
         pass 
 
+class QAA_Environment(object):
+    def __init__(self, config):
+        self.cwd = config.get("cwd", ".")
+
+        self.output_dir = config.get("out_dir", ".")
+        if not self.output_dir.startswith("/"):
+            self.output_dir = join(self.cwd, self.output_dir)
+        self.qa_dir = join(self.outputdir, "qa", "survey" if config["survey_assembly"] else "asm")
+        self.qc_dir = join(self.outputdir, "qc")
+        self.log_dir = join(self.qa_dir, "log")
+
+        self.quast_dir = join(self.qa_dir, "quast")
+        self.busco_dir = join(self.qa_dir, "busco")
+        self.busco_geno_dir = join(self.busco_dir, "geno")
+        self.busco_tran_dir = join(self.busco_dir, "tran")
+        self.busco_prot_dir = join(self.busco_dir, "prot")
+        # busco environment
+        self.busco_init_dir = join(config["etc"], "util", "busco_init_dir")
+        self.busco_data_dir = config["resources"]["busco_databases"]
+
+        self.blob_dir = join(self.qa_dir, "blobtools")
+ 
+        self.blast_dir = join(self.qa_dir, "blast")
+        self.bam_dir = join(self.qa_dir, "bam")
+
 
 """
 qaa_args = {
@@ -149,33 +174,47 @@ class QAA_Runner(object):
         self.config["out_dir"] = self.output_dir
         self.config["etc"] = os.path.join(os.path.dirname(__file__), "..", "etc")
         self.config["cwd"] = os.getcwd()
-        self.config["blobtools_run_bwa"] = not args.blobtools_no_bwa
+        # self.config["blobtools_run_bwa"] = not args.blobtools_no_bwa
+        self.config["create_bam"] = args.align_reads != "no"
+
         requested_modes = args.qaa_mode.split(",")
-        modes = ("geno", "genome", "tran", "transcriptome", "prot", "proteome")
+        modes = ["geno", "genome", "tran", "transcriptome", "prot", "proteome", "all"]
         invalid_modes = list(filter(lambda s:s not in modes, requested_modes))
         if invalid_modes:
             valid_modes = list(set(requested_modes).difference(invalid_modes))
             if valid_modes:
                 print("--qaa-mode: Found invalid modes {}. Proceeding with {}.".format(invalid_modes, valid_modes))
-                requested_modes = valid_modes
+                if "all" in valid_modes:
+                    requested_modes = modes[:-1]
+                else:
+                    requested_modes = valid_modes
             else:
                 print("--qaa-mode: No valid mode provided. Valid modes are {}. Exiting.".format(",".join(modes)))
                 sys.exit(1)
 
-        self.config["normalized"] = args.normalized if hasattr(args, "normalized") else False
+        # these are coming in via api: #api
+        self.config["normalized"] = args.normalized if hasattr(args, "normalized") else False # api
         try:
-            self.config["misc"]["project"] = args.project_prefix
+            self.config["misc"]["project"] = args.project_prefix # api
         except:
             pass
 
-        self.config["no_multiqc"] = args.no_multiqc if hasattr(args, "no_multiqc") else False
+        # self.config["no_multiqc"] = args.no_multiqc if hasattr(args, "no_multiqc") else False # api
+        self.config["run_multiqc"] = args.run_multiqc if hasattr(args, "run_multiqc") else True # api
+
         self.config["multiqc_dir"] = args.multiqc_dir if hasattr(args, "multiqc_dir") else "."
-        self.config["survey_assembly"] = args.survey_assembly
-        self.config["no_blobtools"] = args.no_blobtools if hasattr(args, "no_blobtools") else False
-        self.config["no_busco"] = args.no_busco if hasattr(args, "no_busco") else False
-        self.config["run_genome_module"] = args.survey_assembly or ("geno" in requested_modes or "genome" in requested_modes)
-        self.config["run_transcriptome_module"] = not args.survey_assembly and ("tran" in requested_modes or "transcriptome" in requested_modes)
-        self.config["run_proteome_module"] = not args.survey_assembly and ("prot" in requested_modes or "proteome" in requested_modes)
+        self.config["survey_assembly"] = self.runmode == "survey" # args.survey_assembly # api
+        # self.config["no_blobtools"] = args.no_blobtools if hasattr(args, "no_blobtools") else False # api
+        self.config["run_blobtools"] = args.run_blobtools if hasattr(args, "run_blobttols") else True # api
+        # self.config["no_busco"] = args.no_busco if hasattr(args, "no_busco") else False # api
+        self.config["run_busco"] = args.run_busco if hasatter(args, "run_busco") else True # api
+        # self.config["run_genome_module"] = args.survey_assembly or ("geno" in requested_modes or "genome" in requested_modes)
+        self.config["run_genome_module"] = self.runmode == "survey" or {"geno", "genome"}.intersect(requested_modes)
+        # self.config["run_transcriptome_module"] = not args.survey_assembly and ("tran" in requested_modes or "transcriptome" in requested_modes)
+        self.config["run_transcriptome_module"] = self.runmode != "survey" and {"tran", "transcriptome"}.intersect(requested_modes)
+        # self.config["run_proteome_module"] = not args.survey_assembly and ("prot" in requested_modes or "proteome" in requested_modes)
+        self.config["run_proteome_module"] = self.runmode != "survey" and {"prot", "proteome"}.intersect(requested_modes)
+
         self.config["quast_mincontiglen"] = args.quast_mincontiglen if hasattr(args, "quast_mincontiglen") else 0
         self.new_config_file = os.path.join(self.output_dir, "qaa.conf.xml")
         with open(self.new_config_file, "w") as conf_out:
@@ -206,17 +245,17 @@ class QAA_Runner(object):
         print("QAA_CONFIG_!!!")
         print(self.config)
 
-        if self.config["survey_assembly"]:
+        if self.runmode == "survey": #if self.config["survey_assembly"]:
             report_func(os.path.join(self.output_dir, "qa", "survey", "quast"), os.path.join(self.report_dir, "quast_survey_report.tsv"), compileQUASTReport)
-            if not self.config["no_busco"]:
+            if self.config["run_busco"]: # if not self.config["no_busco"]:
                 report_func(os.path.join(self.output_dir, "qa", "survey", "busco", "geno"), os.path.join(self.report_dir, "busco_survey_report.tsv"), compileBUSCOReport)
-            if not self.config["no_blobtools"]:
+            if self.config["run_blobtools"]: # if not self.config["no_blobtools"]:
                 report_func(os.path.join(self.output_dir, "qa", "survey", "blobtools", "blob"), os.path.join(self.report_dir, "blobtools_survey_report.tsv"), compileBlobReport)
         if self.config["run_genome_module"]:
             report_func(os.path.join(self.output_dir, "qa", "asm", "quast"), os.path.join(self.report_dir, "quast_report.tsv"), compileQUASTReport)
-        if not self.config["no_busco"]:
+        if self.config["run_busco"]: # if not self.config["no_busco"]:
             report_func(os.path.join(self.output_dir, "qa", "asm", "busco", "geno"), os.path.join(self.report_dir, "busco_genome_report.tsv"), compileBUSCOReport)
-        if not self.config["no_blobtools"]:
+        if self.config["run_blobtools"]: #if not self.config["no_blobtools"]:
             report_func(os.path.join(self.output_dir, "qa", "asm", "blobtools", "blob"), os.path.join(self.report_dir, "blobtools_report.tsv"), compileBlobReport)
         if self.config["run_transcriptome_module"] or self.config["run_proteome_module"]:
             report_func(os.path.join(self.output_dir, "qa", "asm", "busco"), os.path.join(self.report_dir, "busco_report.tsv"), compileBUSCOReport)

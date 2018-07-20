@@ -10,7 +10,7 @@ from setuptools import setup, find_packages, Command
 from subprocess import check_call
 
 name = "qaa"
-version = "0.1"
+version = "0.2"
 release = version + ".0"
 
 
