@@ -4,6 +4,7 @@ from os.path import join, dirname, basename
 import csv
 from collections import namedtuple
 import yaml
+import sys
 
 from eicore.external_process.snakemake_helper import *
 from qaa.reporting.busco_report import compileBUSCOReport
@@ -44,8 +45,8 @@ class QAA_Environment(object):
         self.output_dir = config.get("out_dir", ".")
         if not self.output_dir.startswith("/"):
             self.output_dir = join(self.cwd, self.output_dir)
-        self.qa_dir = join(self.outputdir, "qa", "survey" if config["survey_assembly"] else "asm")
-        self.qc_dir = join(self.outputdir, "qc")
+        self.qa_dir = join(self.output_dir, "qa", "survey" if config["survey_assembly"] else "asm")
+        self.qc_dir = join(self.output_dir, "qc")
         self.log_dir = join(self.qa_dir, "log")
 
         self.quast_dir = join(self.qa_dir, "quast")
@@ -58,6 +59,7 @@ class QAA_Environment(object):
         self.busco_data_dir = config["resources"]["busco_databases"]
 
         self.blob_dir = join(self.qa_dir, "blobtools")
+        self.qualimap_dir = join(self.qa_dir, "qualimap")
  
         self.blast_dir = join(self.qa_dir, "blast")
         self.bam_dir = join(self.qa_dir, "bam")
@@ -124,6 +126,7 @@ class QAA_Runner(object):
         #    setattr(args, k, kwargs[k])
         #print(" done.")
 	#print()
+        print("QAAA_ARGS:", args, file=sys.stderr)
 
         print("Configuring execution environment ... ", end="", flush=True)
         self.output_dir = args.output_dir
@@ -162,6 +165,15 @@ class QAA_Runner(object):
             os.makedirs(self.logs_dir)
             print("done.")
             print()
+
+        # from eimethyl: Extract qualimap mem setting from hpc_config, convert to gigabytes and subtract a bit to account for memory above
+        # java heap
+        import json
+        print("HPCCONFIG", args.hpc_config, file=sys.stderr)
+        data = json.load(open(args.hpc_config))
+        qmem = str((int(int(data["qa_qualimap"]["memory"]) / 1000)) - 2) + "G"
+        self.config["qualimap_mem"] = qmem
+
                 	
         if hasattr(args, "make_input_stream"):
             self.config["samplesheet"] = _create_input_stream(args)
@@ -205,9 +217,9 @@ class QAA_Runner(object):
         self.config["multiqc_dir"] = args.multiqc_dir if hasattr(args, "multiqc_dir") else "."
         self.config["survey_assembly"] = self.runmode == "survey" # args.survey_assembly # api
         # self.config["no_blobtools"] = args.no_blobtools if hasattr(args, "no_blobtools") else False # api
-        self.config["run_blobtools"] = args.run_blobtools if hasattr(args, "run_blobttols") else True # api
+        self.config["run_blobtools"] = args.run_blobtools if hasattr(args, "run_blobtools") else True # api
         # self.config["no_busco"] = args.no_busco if hasattr(args, "no_busco") else False # api
-        self.config["run_busco"] = args.run_busco if hasatter(args, "run_busco") else True # api
+        self.config["run_busco"] = args.run_busco if hasattr(args, "run_busco") else True # api
         # self.config["run_genome_module"] = args.survey_assembly or ("geno" in requested_modes or "genome" in requested_modes)
         self.config["run_genome_module"] = self.runmode == "survey" or {"geno", "genome"}.intersect(requested_modes)
         # self.config["run_transcriptome_module"] = not args.survey_assembly and ("tran" in requested_modes or "transcriptome" in requested_modes)
@@ -216,7 +228,7 @@ class QAA_Runner(object):
         self.config["run_proteome_module"] = self.runmode != "survey" and {"prot", "proteome"}.intersect(requested_modes)
 
         self.config["quast_mincontiglen"] = args.quast_mincontiglen if hasattr(args, "quast_mincontiglen") else 0
-        self.new_config_file = os.path.join(self.output_dir, "qaa.conf.xml")
+        self.new_config_file = os.path.join(self.output_dir, "qaa.conf.yaml")
         with open(self.new_config_file, "w") as conf_out:
             yaml.dump(self.config, conf_out, default_flow_style=False)
 
@@ -224,7 +236,7 @@ class QAA_Runner(object):
 
     def _clean_blobtools_trash(self):
         import glob		
-        for f in glob.glob(os.path.join(os.getcwd(), "*.blob_bwa.bam.cov")):
+        for f in glob.glob(os.path.join(os.getcwd(), "*.bam.cov")):
             try:
                 if os.path.isfile(f):
                     os.unlink(f)
