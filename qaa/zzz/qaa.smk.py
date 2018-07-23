@@ -14,32 +14,7 @@ else:
 with open("qaa-inputfiles.txt", "w") as input_out:
         print(*INPUTFILES.values(), sep="\n", file=input_out)
 
-
 qaa_env = QAA_Environment(config)
-"""
-class QAA_Environment(object):
-    def __init__(self, config):
-        self.output_dir = config.get("out_dir", ".")
-        self.qa_dir = join(self.outputdir, "qa", "survey" if config["survey_assembly"] else "asm")
-        self.qc_dir = join(self.outputdir, "qc")
-        self.log_dir = join(self.qa_dir, "log")
-
-        self.quast_dir = join(self.qa_dir, "quast")
-        self.busco_dir = join(self.qa_dir, "busco")
-        self.busco_geno_dir = join(self.busco_dir, "geno")
-        self.busco_tran_dir = join(self.busco_dir, "tran")
-        self.busco_prot_dir = join(self.busco_dir, "prot")
-        # busco environment
-        self.busco_init_dir = join(config["etc"], "util", "busco_init_dir")
-        self.busco_data_dir = config["resources"]["busco_databases"]
-
-        self.blob_dir = join(self.qa_dir, "blobtools")
-
-        self.blast_dir = join(self.qa_dir, "blast")
-        self.bam_dir = join(self.qa_dir, "bam")
-
-        self.cwd = os.getcwd()
-"""
 
 def getBUSCOData(sample):
     return join(qaa_env.busco_data_dir, INPUTFILES[sample].busco_id)
@@ -54,16 +29,16 @@ def getTranscripts(wildcards):
 def getProteins(wildcards):
     return INPUTFILES[wildcards.sample].proteins
 
-
 runmode = "survey" if config["survey_assembly"] else "asm"
-
 
 TARGETS = list()
 for sample in INPUTFILES:
     if config["run_genome_module"]:
         TARGETS.append(join(qaa_env.quast_dir, sample, "quast.log"))
         if config["run_blobtools"]:
+            # blobtable = join(qaa_env.blob_dir, "{sample}", "{sample}.blobDB.table.txt")
             TARGETS.append(join(qaa_env.blob_dir, sample, sample + ".blobDB.table.txt"))
+            TARGETS.append(join(qaa_env.qualimap_dir, sample, sample + ".qualimap.html"))
         if config["run_busco"]:
             TARGETS.append(join(qaa_env.busco_geno_dir, sample, sample + "_short_summary.txt"))
     if config["run_transcriptome_module"]:
@@ -71,8 +46,8 @@ for sample in INPUTFILES:
     if config["run_proteome_module"]:
         TARGETS.append(join(qaa_env.busco_prot_dir, sample, sample + "_short_summary.txt"))
 
-if config["run_multiqc"]:
-    TARGETS.append(join(config["multiqc_dir", config["misc"]["project"] + "_" + runmode + "_multiqc_report.html"))
+#if config["run_multiqc"]:
+#    TARGETS.append(join(config["multiqc_dir", config["misc"]["project"] + "_" + runmode + "_multiqc_report.html"))
 
 TARGETS = list(filter(lambda t:t, TARGETS)) # why? 2018-07-20 I don't think this is needed anymore.
 
@@ -88,41 +63,40 @@ rule all:
     input:
         TARGETS
 
-
 if config["run_multiqc"]:
     rule qaa_multiqc:
-        input = TARGETS[:-1] # TARGETS[-1] is multiqc report
-    output:
-        join(config["multiqc_dir"], config["misc"]["project"] + "_" + runmode + "_multiqc_report.html")
-    params:
-        load = loadPreCmd(config["load"]["multiqc"]),
-        mqc_config = config["resources"]["multiqc_config"],
-        datadir = qaa_env.output_dir,
-        outdir = config["multiqc_dir"],
-        prefix = config["misc"]["project"] + "_" + runmode,
-        ignore_qc = join(qaa_env.qc_dir, "fastqc", "bbduk", "*"),
-        ignore_qa = join(qaa_env.qa_dir, "log"),
-        mqc_files = "MQC_LIST.txt",
-        fastqcdir = join(qaa_env.qc_dir, "fastqc", "bbnorm" if config["normalized"] else "bbduk"),
-        katdir = join(qaa_env.qc_dir, "kat"),
-        buscodir = qaa_env.busco_geno_dir,
-        quastdir = qaa_env.quast_dir,
-        samplesheet = config["full_samplesheet"],
-        mode = runmode
-    log:
-        "readqc_multiqc.log"
-    shell:
-        "{params.load}" + \
-        " find {params.buscodir} -name '*short_summary.txt' > {params.mqc_files}.tmp &&" + \
-        " find {params.quastdir} -name 'report.tsv' >> {params.mqc_files}.tmp &&" + \
-        " if [[ -d \"{params.katdir}\" && {params.mode} == \"survey\" ]]; then" + \
-        "   find {params.katdir} -name '*.json' >> {params.mqc_files}.tmp; fi &&" + \
-        " if [[ -d \"{params.fastqcdir}\" && {params.mode} == \"survey\" ]]; then" + \
-        "   find {params.fastqcdir} -name 'fastqc_data.txt' >> {params.mqc_files}.tmp; fi &&" + \
-        " grep -F -f <(cut -f 1 -d , {params.samplesheet}) {params.mqc_files}.tmp > {params.mqc_files} &&" + \
-        " rm {params.mqc_files}.tmp &&" + \
-        " multiqc -f -n {params.prefix}_multiqc_report -i {params.prefix} -z -c {params.mqc_config} -o {params.outdir} " + \
-        " --file-list {params.mqc_files} > {log}"
+        # TARGETS[-1] is multiqc report
+        input:
+            TARGETS[:-1]
+        output:
+            join(config["multiqc_dir"], config["misc"]["project"] + "_" + runmode + "_multiqc_report.html")
+        params:
+            load = loadPreCmd(config["load"]["multiqc"]),
+            mqc_config = config["resources"]["multiqc_config"],
+            datadir = qaa_env.output_dir,
+            outdir = config["multiqc_dir"],
+            prefix = config["misc"]["project"] + "_" + runmode,
+            mqc_files = "MQC_LIST.txt",
+            fastqcdir = join(qaa_env.qc_dir, "fastqc", "bbnorm" if config["normalized"] else "bbduk"),
+            katdir = join(qaa_env.qc_dir, "kat"),
+            buscodir = qaa_env.busco_geno_dir,
+            quastdir = qaa_env.quast_dir,
+            samplesheet = config["full_samplesheet"],
+            mode = runmode
+        log:
+            "readqc_multiqc.log"
+        shell:
+            "{params.load}" + \
+            " find {params.buscodir} -name '*short_summary.txt' > {params.mqc_files}.tmp &&" + \
+            " find {params.quastdir} -name 'report.tsv' >> {params.mqc_files}.tmp &&" + \
+            " if [[ -d \"{params.katdir}\" && {params.mode} == \"survey\" ]]; then" + \
+            "   find {params.katdir} -name '*.json' >> {params.mqc_files}.tmp; fi &&" + \
+            " if [[ -d \"{params.fastqcdir}\" && {params.mode} == \"survey\" ]]; then" + \
+            "   find {params.fastqcdir} -name 'fastqc_data.txt' >> {params.mqc_files}.tmp; fi &&" + \
+            " grep -F -f <(cut -f 1 -d , {params.samplesheet}) {params.mqc_files}.tmp > {params.mqc_files} &&" + \
+            " rm {params.mqc_files}.tmp &&" + \
+            " multiqc -f -n {params.prefix}_multiqc_report -i {params.prefix} -z -c {params.mqc_config} -o {params.outdir} " + \
+            " --file-list {params.mqc_files} > {log}"
 
 if config["run_proteome_module"]:
     rule qa_busco_prot:
@@ -154,7 +128,7 @@ if config["run_proteome_module"]:
 if config["run_transcriptome_module"]:
     rule qa_busco_tran:
         input:
-            busco_input = getProteins
+            busco_input = getTranscripts
         output:
             join(qaa_env.busco_tran_dir, "{sample}", "{sample}_short_summary.txt")
         log:
@@ -180,20 +154,20 @@ if config["run_transcriptome_module"]:
 
 if config["run_genome_module"]:
     if config["run_busco"]:
-        rule qa_busco_tran:
+        rule qa_busco_geno:
             input:
-                busco_input = getProteins
+                busco_input = getAssembly
             output:
-                join(qaa_env.busco_tran_dir, "{sample}", "{sample}_short_summary.txt")
+                join(qaa_env.busco_geno_dir, "{sample}", "{sample}_short_summary.txt")
             log:
-                join(qaa_env.log_dir, "{sample}_busco_tran.log")
+                join(qaa_env.log_dir, "{sample}_busco_geno.log")
             params:
-                outdir = lambda wildcards: join(qaa_env.busco_tran_dir, "run_" + wildcards.sample),
-                final_outdir = lambda wildcards: join(qaa_env.busco_tran_dir, wildcards.sample),
-                tmp = lambda wildcards: join(qaa_env.busco_tran_dir, "tmp", wildcards.sample),
+                outdir = lambda wildcards: join(qaa_env.busco_geno_dir, "run_" + wildcards.sample),
+                final_outdir = lambda wildcards: join(qaa_env.busco_geno_dir, wildcards.sample),
+                tmp = lambda wildcards: join(qaa_env.busco_geno_dir, "tmp", wildcards.sample),
                 load = loadPreCmd(config["load"]["busco"]),
                 busco_data = lambda wildcards: getBUSCOData(wildcards.sample),
-                busco_mode = "tran"
+                busco_mode = "geno"
             threads:
                 8
             shell:
@@ -225,37 +199,91 @@ if config["run_genome_module"]:
                 " || touch {params.outdir}/transposed_report.tsv) &> {log}"
 
     if config["create_bam"]:
-
+        """# ./PRO1841_E2_PlateA_E2/PRO1841_E2_PlateA_E2.markdup.bam.rgindex
+# i=1; for f in $(find . -name '*.markdup.bam'); do  echo $i > $f.rgindex; i=$((i+1)); done
+rule picard_add_correct_rg:
+    input:
+        bam = join(BWADIR, "{sample}", "{sample}.markdup.bam")
+    output:
+        bam = join(BWADIR, "{sample}", "{sample}.markdup.rg.bam")
+    log:
+        join(BWADIR, "logs", "{sample}.picard_add_correct_rg.log")
+    params:
+        sample = basename("{sample}.markdup.bam").strip(".markdup.bam")
+    shell:
+        "set +u" + \
+        " && source jre-8u144" + \
+        " && java -jar /tgac/software/testing/picardtools/2.18.4/x86_64/picard.jar AddOrReplaceReadGroups I={input.bam} O={output.bam} RGLB={params.sample} RGPL=illumina RGPU={params.sample} RGSM={params.sample} RGID=$(cat {input.bam}.rgindex) &> {log}"
         """
-        source bowtie-2.3.4 && /usr/bin/time -v bowtie2-build --threads 16 genome.1kb.fasta genome.1kb.fasta"
-        source bowtie-2.3.4 && /usr/bin/time -v bowtie2 --threads 32 -x /tgac/workarea/group-pb/ENQ-1378_PIP-1073_Trevor_Wang_JIC.TW.ENQ-1378_01/annotation/Annotation_Aug2017/Analysis/bowtie-2.3.4/index/genome.1kb.fasta -1 1753_LIB21060_LDI18243_CGATGT_L001_R1.fastq.gz -2 1753_LIB21060_LDI18243_CGATGT_L001_R2.fastq.gz -S GrassPea-vs-GrassPea_output.sam && source samtools-1.5 && /usr/bin/time -v samtools sort -@16 -O BAM -o GrassPea-vs-GrassPea_output.bam GrassPea-vs-GrassPea_output.sam && /usr/bin/time -v samtools index GrassPea-vs-GrassPea_output.bam && /usr/bin/time -v samtools rmdup GrassPea-vs-GrassPea_output.bam nodup_GrassPea-vs-GrassPea_output.bam"
+        """ --rg-id <text>     set read group id, reflected in @RG line and RG:Z: opt field
+  --rg <text>        add <text> ("lab:value") to @RG line of SAM header.
+                     Note: @RG line only printed when --rg-id is set.
+@RG     ID:1    LB:PRO1841_B1_PlateA_B1 PL:illumina     SM:PRO1841_B1_PlateA_B1 PU:PRO1841_B1_PlateA_B1
+-R STR        read group header line such as '@RG\tID:foo\tSM:bar' [null]
         """
+        BAM_THREADS = 16
+        QA_ALIGNER = "bowtie2"
+        if QA_ALIGNER == "bowtie2":
+            QA_ALIGN_LOAD = loadPreCmd(config["load"]["blob_bowtie2"])
+            QA_ALIGN_BUILD_INDEX = "bowtie2-build --threads {threads} {input.assembly} {params.ref}"
+            QA_ALIGN = "bowtie2 --threads {params.align_threads} -x {params.ref} -1 {input.reads[0]} -2 {input.reads[1]} --rg-id {sample} --rg LB:{sample} --rg PL:illumina --rg SM:{sample} --rg PU:{sample}"
+        else: # bwa
+            QA_ALIGN_LOAD = loadPreCmd(config["load"]["blob_bwa"])
+            QA_ALIGN_BUILD_INDEX = "bwa index -p {params.ref} {input.assembly}"
+            QA_ALIGN = "bwa mem -t {threads} -R '@RG\tID:1\tLB:{sample}\tPL:illumina\tSM:{sample}\tPU:{sample}' {params.ref} {input.reads[0]} {input.reads[1]}"
 
-        #!TODO: better bam generation
-        rule qa_bwa_mem:
-            input: 
+        rule qa_align_reads:
+            input:
                 reads = getReads,
                 assembly = getAssembly
             output:
-                bam = join(qaa_env.bam_dir, "{sample}", "{sample}.create_bam.bam")
+                bam = join(qaa_env.bam_dir, "{sample}", "{sample}.align_reads.bam")
             log:
-                join(qaa_env.log_dir, "{sample}.create_bam.log")
+                join(qaa_env.log_dir, "{sample}.align_reads.log")
             params:
                 outdir = lambda wildcards: join(qaa_env.bam_dir, wildcards.sample),
                 ref = lambda wildcards: join(qaa_env.bam_dir, wildcards.sample, wildcards.sample + ".assembly.fasta"),
-                outbam = lambda wildcards: join(qaa_env.bam_dir, wildcards.sample, wildcards.sample + ".create_bam.bam"),
-                load = loadPreCmd(config["load"]["blob_bwa"])
+                outbam = lambda wildcards: join(qaa_env.bam_dir, wildcards.sample, wildcards.sample, ".align_reads.bam"),
+                align_threads = BAM_THREADS / 2,
+                sort_threads = BAM_THREADS / 2,
+                load_align = QA_ALIGN_LOAD, #loadPreCmd(config["load"]["blob_bowtie2"]),
+                load_markdup = loadPreCmd(config["load"]["picard"]),
+                cmd_markdup = loadPreCmd(config["cmd"]["picard_markdup"], is_dependency=False)
             threads:
-                8
+                BAM_THREADS
             shell:
-                "{params.load}" + TIME_CMD + \
-                "bwa index -p {params.ref} {input.assembly} &&" + \
-                "bwa mem -t {threads} {params.ref} {input.reads[0]} {input.reads[1]}" + \
-                " | samtools view -buSh - | samtools sort -o {output.bam} - &&" + \
-                " samtools index {output.bam} 2> {log}"
-
+                "{params.load_align}" + \
+                TIME_CMD + " " + QA_ALIGN_BUILD_INDEX + " &&" + \
+                " " + TIME_CMD + " " + QA_ALIGN + " |" + \
+                " samtools sort -@ {params.sort_threads} -o {output.bam}.tmp.bam - &&" + \
+                " {params.load_markdup}" + \
+                TIME_CMD + " {params.cmd_markdup}" + \
+                " INPUT={output.bam}.tmp.bam OUTPUT={output.bam} METRICS_FILE={output.bam}.metrics.txt REMOVE_DUPLICATES=true ASSUME_SORT_ORDER=coordinate &&" + \
+                " samtools index {output.bam} &&" + \
+                " 2> {log}"
 
     if config["run_blobtools"]:
+        rule qa_qualimap:
+            input:
+                bam = join(qaa_env.bam_dir, "{sample}", "{sample}.align_reads.bam") if config["create_bam"] else getBAM,
+            output: 
+                join(qaa_env.qualimap_dir, "{sample}", "{sample}.qualimap.html")
+            params:
+                load = loadPreCmd(config["load"]["qualimap"]),
+                outdir = lambda wildcards: join(qaa_env.qualimap_dir, wildcards.sample),
+                mem = config["qualimap_mem"]  # this is coming from within qaa/__init__.py
+            log: 
+                join(qaa_env.log_dir, "{sample}.qualimap.log")
+            threads: 2
+            message: "Using qualimap to collect stats for: {input.bam}"
+            shell: 
+               "{params.load}" + \
+               TIME_CMD + "qualimap --java-mem-size={params.mem} bamqc " + \
+               "-bam {input.bam} -nt {threads} -outdir {params.outdir} &> {log}"
+
+
+
+
         rule qa_blast:
             input:
                 assembly = getAssembly
@@ -265,7 +293,7 @@ if config["run_genome_module"]:
                 join(qaa_env.log_dir, "{sample}.blast.log")
             params:
                 outdir = lambda wildcards: join(qaa_env.blast_dir, wildcards.sample),
-                load = loadPreCmd(config["load"]["blob_blast"],
+                load = loadPreCmd(config["load"]["blob_blast"]),
                 blastdb = config["resources"]["blob_blastdb"]
             threads:
                 8
@@ -278,7 +306,7 @@ if config["run_genome_module"]:
 
         rule qa_blobtools:
             input:
-                bam = join(qaa_env.bam_dir, "{sample}", "{sample}.create_bam.bam") if config["create_bam"] else getBAM,
+                bam = join(qaa_env.bam_dir, "{sample}", "{sample}.align_reads.bam") if config["create_bam"] else getBAM,
                 blast = join(qaa_env.blast_dir, "{sample}", "{sample}.blast.tsv"),
                 assembly = getAssembly
             output:
@@ -294,7 +322,6 @@ if config["run_genome_module"]:
             shell:
                 "{params.load}" + TIME_CMD + \
                 " blobtools create -i {input.assembly} -b {input.bam} -t {input.blast} -o {params.prefix} &&" + \
-                " blobtools view -i {params.prefix}.blobDB.json -o $(dirname {params.prefix}) -r {params.taxlevel} &&" + \
-                " blobtools blobplot -r {params.taxlevel} -l 1000 -i {params.prefix}.blobDB.json -o $(dirname {params.prefix})" + \
+                " blobtools view -i {params.prefix}.blobDB.json -o $(dirname {params.prefix})/ -r {params.taxlevel} &&" + \
+                " blobtools blobplot -r {params.taxlevel} -l 1000 -i {params.prefix}.blobDB.json -o $(dirname {params.prefix})/" + \
                 " &> {log}"                
-
