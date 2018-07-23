@@ -38,7 +38,8 @@ for sample in INPUTFILES:
         if config["run_blobtools"]:
             # blobtable = join(qaa_env.blob_dir, "{sample}", "{sample}.blobDB.table.txt")
             TARGETS.append(join(qaa_env.blob_dir, sample, sample + ".blobDB.table.txt"))
-            TARGETS.append(join(qaa_env.qualimap_dir, sample, sample + ".qualimap.html"))
+            #    join(qaa_env.qualimap_dir, "{sample}", "qualimapReport.html")
+            TARGETS.append(join(qaa_env.qualimap_dir, sample, "qualimapReport.html"))
         if config["run_busco"]:
             TARGETS.append(join(qaa_env.busco_geno_dir, sample, sample + "_short_summary.txt"))
     if config["run_transcriptome_module"]:
@@ -266,8 +267,8 @@ rule picard_add_correct_rg:
         rule qa_qualimap:
             input:
                 bam = join(qaa_env.bam_dir, "{sample}", "{sample}.align_reads.bam") if config["create_bam"] else getBAM,
-            output: 
-                join(qaa_env.qualimap_dir, "{sample}", "{sample}.qualimap.html")
+            output:
+                join(qaa_env.qualimap_dir, "{sample}", "qualimapReport.html")
             params:
                 load = loadPreCmd(config["load"]["qualimap"]),
                 outdir = lambda wildcards: join(qaa_env.qualimap_dir, wildcards.sample),
@@ -278,7 +279,7 @@ rule picard_add_correct_rg:
             message: "Using qualimap to collect stats for: {input.bam}"
             shell: 
                "{params.load}" + \
-               TIME_CMD + "qualimap --java-mem-size={params.mem} bamqc " + \
+               TIME_CMD + " qualimap --java-mem-size={params.mem} bamqc " + \
                "-bam {input.bam} -nt {threads} -outdir {params.outdir} &> {log}"
 
 
