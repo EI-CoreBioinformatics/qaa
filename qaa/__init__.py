@@ -221,11 +221,11 @@ class QAA_Runner(object):
         # self.config["no_busco"] = args.no_busco if hasattr(args, "no_busco") else False # api
         self.config["run_busco"] = args.run_busco if hasattr(args, "run_busco") else True # api
         # self.config["run_genome_module"] = args.survey_assembly or ("geno" in requested_modes or "genome" in requested_modes)
-        self.config["run_genome_module"] = self.runmode == "survey" or {"geno", "genome"}.intersect(requested_modes)
+        self.config["run_genome_module"] = self.runmode == "survey" or {"geno", "genome"}.intersection(requested_modes)
         # self.config["run_transcriptome_module"] = not args.survey_assembly and ("tran" in requested_modes or "transcriptome" in requested_modes)
-        self.config["run_transcriptome_module"] = self.runmode != "survey" and {"tran", "transcriptome"}.intersect(requested_modes)
+        self.config["run_transcriptome_module"] = self.runmode != "survey" and {"tran", "transcriptome"}.intersection(requested_modes)
         # self.config["run_proteome_module"] = not args.survey_assembly and ("prot" in requested_modes or "proteome" in requested_modes)
-        self.config["run_proteome_module"] = self.runmode != "survey" and {"prot", "proteome"}.intersect(requested_modes)
+        self.config["run_proteome_module"] = self.runmode != "survey" and {"prot", "proteome"}.intersection(requested_modes)
 
         self.config["quast_mincontiglen"] = args.quast_mincontiglen if hasattr(args, "quast_mincontiglen") else 0
         self.new_config_file = os.path.join(self.output_dir, "qaa.conf.yaml")
