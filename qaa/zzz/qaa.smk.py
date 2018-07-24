@@ -199,32 +199,9 @@ if config["run_genome_module"]:
                 " {params.cmd} -o {params.outdir} -t {threads} -L -s {input.assembly} --min-contig {params.contiglen}" + \
                 " || touch {params.outdir}/transposed_report.tsv) &> {log}"
 
-    if config["create_bam"]:
-        """# ./PRO1841_E2_PlateA_E2/PRO1841_E2_PlateA_E2.markdup.bam.rgindex
-# i=1; for f in $(find . -name '*.markdup.bam'); do  echo $i > $f.rgindex; i=$((i+1)); done
-rule picard_add_correct_rg:
-    input:
-        bam = join(BWADIR, "{sample}", "{sample}.markdup.bam")
-    output:
-        bam = join(BWADIR, "{sample}", "{sample}.markdup.rg.bam")
-    log:
-        join(BWADIR, "logs", "{sample}.picard_add_correct_rg.log")
-    params:
-        sample = basename("{sample}.markdup.bam").strip(".markdup.bam")
-    shell:
-        "set +u" + \
-        " && source jre-8u144" + \
-        " && java -jar /tgac/software/testing/picardtools/2.18.4/x86_64/picard.jar AddOrReplaceReadGroups I={input.bam} O={output.bam} RGLB={params.sample} RGPL=illumina RGPU={params.sample} RGSM={params.sample} RGID=$(cat {input.bam}.rgindex) &> {log}"
-        """
-        """ --rg-id <text>     set read group id, reflected in @RG line and RG:Z: opt field
-  --rg <text>        add <text> ("lab:value") to @RG line of SAM header.
-                     Note: @RG line only printed when --rg-id is set.
-@RG     ID:1    LB:PRO1841_B1_PlateA_B1 PL:illumina     SM:PRO1841_B1_PlateA_B1 PU:PRO1841_B1_PlateA_B1
--R STR        read group header line such as '@RG\tID:foo\tSM:bar' [null]
-        """
+    if config["align_reads"]:
         BAM_THREADS = 16
-        QA_ALIGNER = "bowtie2"
-        if QA_ALIGNER == "bowtie2":
+        if config["align_reads"] == "bowtie2":
             QA_ALIGN_LOAD = loadPreCmd(config["load"]["blob_bowtie2"])
             QA_ALIGN_BUILD_INDEX = "bowtie2-build --threads {threads} {input.assembly} {params.ref}"
             QA_ALIGN = "bowtie2 --threads {params.align_threads} -x {params.ref} -1 {input.reads[0]} -2 {input.reads[1]} --rg-id {sample} --rg LB:{sample} --rg PL:illumina --rg SM:{sample} --rg PU:{sample}"
@@ -266,7 +243,7 @@ rule picard_add_correct_rg:
     if config["run_blobtools"]:
         rule qa_qualimap:
             input:
-                bam = join(qaa_env.bam_dir, "{sample}", "{sample}.align_reads.bam") if config["create_bam"] else getBAM,
+                bam = join(qaa_env.bam_dir, "{sample}", "{sample}.align_reads.bam") if config["align_reads"] else getBAM,
             output:
                 join(qaa_env.qualimap_dir, "{sample}", "qualimapReport.html")
             params:
@@ -281,9 +258,6 @@ rule picard_add_correct_rg:
                "{params.load}" + \
                TIME_CMD + " qualimap --java-mem-size={params.mem} bamqc " + \
                "-bam {input.bam} -nt {threads} -outdir {params.outdir} &> {log}"
-
-
-
 
         rule qa_blast:
             input:
@@ -307,7 +281,7 @@ rule picard_add_correct_rg:
 
         rule qa_blobtools:
             input:
-                bam = join(qaa_env.bam_dir, "{sample}", "{sample}.align_reads.bam") if config["create_bam"] else getBAM,
+                bam = join(qaa_env.bam_dir, "{sample}", "{sample}.align_reads.bam") if config["align_reads"] else getBAM,
                 blast = join(qaa_env.blast_dir, "{sample}", "{sample}.blast.tsv"),
                 assembly = getAssembly
             output:

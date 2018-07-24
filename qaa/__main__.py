@@ -66,7 +66,7 @@ def main():
 
 	parser.add_argument("input", help="""Path to assembly samplesheet.""")
 	parser.add_argument("--output-dir", "-o", type=str, default=".", help="QAA will output data to this directory.")
-	parser.add_argument("--align-reads", choices=("bwa", "no"), default="bwa", help="blobtools and qualimap require bam-input. You can either have qaa handle it with bwa or provide your own bam file. [bwa]")
+	parser.add_argument("--align-reads", choices=("bwa", "bowtie2", "no"), default="bwa", help="blobtools and qualimap require bam-input. You can either have qaa handle it with bwa or provide your own bam file. [bowtie2]")
 	parser.add_argument("--qaa-mode", type=str, default="all", help="Comma-separated list of run modes (geno[me], tran[scriptome], prot[eome], all). If tran and/or prot are chosen, the samplesheet must include paths to transcriptome/proteome data. Omitting the genome mode allows to run QAA purely on transcriptome/proteome data. In this case, only BUSCO analyses will be performed. QAA'ing a transcriptome assembly can be done by supplying the respective fasta file in the assembly column of the samplesheet. [all]")
 	# parser.add_argument("--survey-assembly", action="store_true", help="If True, then this qaa will only run quast and blobtools. This mode is for assessing assemble-ability of a set of reads as well as a closer look at taxonomic composition of the data. genome-mode is implied and prot/tran mode requests are ignored. [off/False]")
 	# parser.add_argument("--no-blobtools", action="store_true", help="Avoids failing blobtools on low quality assemblies. BGRRL helper function [False]")

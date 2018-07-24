@@ -188,6 +188,7 @@ class QAA_Runner(object):
         self.config["cwd"] = os.getcwd()
         # self.config["blobtools_run_bwa"] = not args.blobtools_no_bwa
         self.config["create_bam"] = args.align_reads != "no"
+        self.config["align_reads"] = args.align_reads if args.align_reads != "no" else False
 
         requested_modes = args.qaa_mode.split(",")
         modes = ["geno", "genome", "tran", "transcriptome", "prot", "proteome", "all"]
