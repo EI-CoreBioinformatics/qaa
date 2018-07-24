@@ -47,8 +47,8 @@ for sample in INPUTFILES:
     if config["run_proteome_module"]:
         TARGETS.append(join(qaa_env.busco_prot_dir, sample, sample + "_short_summary.txt"))
 
-#if config["run_multiqc"]:
-#    TARGETS.append(join(config["multiqc_dir", config["misc"]["project"] + "_" + runmode + "_multiqc_report.html"))
+if config["run_multiqc"]:
+    TARGETS.append(join(config["multiqc_dir"], config["misc"]["project"] + "_" + runmode + "_multiqc_report.html"))
 
 TARGETS = list(filter(lambda t:t, TARGETS)) # why? 2018-07-20 I don't think this is needed anymore.
 
@@ -82,6 +82,7 @@ if config["run_multiqc"]:
             katdir = join(qaa_env.qc_dir, "kat"),
             buscodir = qaa_env.busco_geno_dir,
             quastdir = qaa_env.quast_dir,
+            qualimapdir = qaa_env.qualimap_dir,
             samplesheet = config["full_samplesheet"],
             mode = runmode
         log:
@@ -94,6 +95,7 @@ if config["run_multiqc"]:
             "   find {params.katdir} -name '*.json' >> {params.mqc_files}.tmp; fi &&" + \
             " if [[ -d \"{params.fastqcdir}\" && {params.mode} == \"survey\" ]]; then" + \
             "   find {params.fastqcdir} -name 'fastqc_data.txt' >> {params.mqc_files}.tmp; fi &&" + \
+            " find {params.qualimapdir} -name '*.txt' >> {params.mqc_files}.tmp &&" + \
             " grep -F -f <(cut -f 1 -d , {params.samplesheet}) {params.mqc_files}.tmp > {params.mqc_files} &&" + \
             " rm {params.mqc_files}.tmp &&" + \
             " multiqc -f -n {params.prefix}_multiqc_report -i {params.prefix} -z -c {params.mqc_config} -o {params.outdir} " + \
