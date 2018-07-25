@@ -115,13 +115,15 @@ if config["run_proteome_module"]:
             tmp = lambda wildcards: join(qaa_env.busco_prot_dir, "tmp", wildcards.sample),
             load = loadPreCmd(config["load"]["busco"]),
             busco_data = lambda wildcards: getBUSCOData(wildcards.sample),
-            busco_mode = "prot"
+            busco_mode = "prot",
+            inputpath = lambda wildcards: getProteins(wildcards) if getProteins(wildcards).startswith("/") else join(qaa_env.cwd, getProteins(wildcards))
         threads:
             8
         shell:
             qaa_env.busco_init_dir + " {params.outdir} && cd {params.outdir} && cd .. &&" + \
             " {params.load}" + TIME_CMD + \
-            " run_BUSCO.py -i " + join(qaa_env.cwd, "{input.busco_input}") + " -c {threads} -m {params.busco_mode}" + \
+            " run_BUSCO.py -i {params.inputpath} -c {threads} -m {params.busco_mode}" + \
+            # " run_BUSCO.py -i " + join(qaa_env.cwd, "{input.busco_input}") + " -c {threads} -m {params.busco_mode}" + \
             " --force -t {params.tmp} -l {params.busco_data} -o {wildcards.sample} &> {log} && cd " + qaa_env.cwd + \
             " && mkdir -p {params.final_outdir} && mv -v {params.outdir}/* {params.final_outdir}/" + \
             " && rm -rf {params.outdir}" + \
@@ -142,13 +144,15 @@ if config["run_transcriptome_module"]:
             tmp = lambda wildcards: join(qaa_env.busco_tran_dir, "tmp", wildcards.sample),
             load = loadPreCmd(config["load"]["busco"]),
             busco_data = lambda wildcards: getBUSCOData(wildcards.sample),
-            busco_mode = "tran"
+            busco_mode = "tran",
+            inputpath = lambda wildcards: getTranscripts(wildcards) if getTranscripts(wildcards).startswith("/") else join(qaa_env.cwd, getTranscripts(wildcards))
         threads:
             8
         shell:
             qaa_env.busco_init_dir + " {params.outdir} && cd {params.outdir} && cd .. &&" + \
             " {params.load}" + TIME_CMD + \
-            " run_BUSCO.py -i " + join(qaa_env.cwd, "{input.busco_input}") + " -c {threads} -m {params.busco_mode}" + \
+            " run_BUSCO.py -i {params.inputpath} -c {threads} -m {params.busco_mode}" + \
+            # " run_BUSCO.py -i " + join(qaa_env.cwd, "{input.busco_input}") + " -c {threads} -m {params.busco_mode}" + \
             " --force -t {params.tmp} -l {params.busco_data} -o {wildcards.sample} &> {log} && cd " + qaa_env.cwd + \
             " && mkdir -p {params.final_outdir} && mv -v {params.outdir}/* {params.final_outdir}/" + \
             " && rm -rf {params.outdir}" + \
@@ -170,13 +174,15 @@ if config["run_genome_module"]:
                 tmp = lambda wildcards: join(qaa_env.busco_geno_dir, "tmp", wildcards.sample),
                 load = loadPreCmd(config["load"]["busco"]),
                 busco_data = lambda wildcards: getBUSCOData(wildcards.sample),
-                busco_mode = "geno"
+                busco_mode = "geno",
+                inputpath = lambda wildcards: getAssembly(wildcards) if getAssembly(wildcards).startswith("/") else join(qaa_env.cwd, getAssembly(wildcards))
             threads:
                 8
             shell:
                 qaa_env.busco_init_dir + " {params.outdir} && cd {params.outdir} && cd .. &&" + \
                 " {params.load}" + TIME_CMD + \
-                " run_BUSCO.py -i " + join(qaa_env.cwd, "{input.busco_input}") + " -c {threads} -m {params.busco_mode}" + \
+                # " run_BUSCO.py -i " + join(qaa_env.cwd, "{input.busco_input}") + " -c {threads} -m {params.busco_mode}" + \
+                " run_BUSCO.py -i {params.inputpath} -c {threads} -m {params.busco_mode}" + \
                 " --force -t {params.tmp} -l {params.busco_data} -o {wildcards.sample} &> {log} && cd " + qaa_env.cwd + \
                 " && mkdir -p {params.final_outdir} && mv -v {params.outdir}/* {params.final_outdir}/" + \
                 " && rm -rf {params.outdir}" + \
