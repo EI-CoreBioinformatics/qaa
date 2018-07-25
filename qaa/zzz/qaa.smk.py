@@ -210,7 +210,7 @@ if config["run_genome_module"]:
         else: # bwa
             QA_ALIGN_LOAD = loadPreCmd(config["load"]["blob_bwa"])
             QA_ALIGN_BUILD_INDEX = "bwa index -p {params.ref} {input.assembly}"
-            QA_ALIGN = "bwa mem -t {threads} -R '@RG\tID:1\tLB:{sample}\tPL:illumina\tSM:{sample}\tPU:{sample}' {params.ref} {input.reads[0]} {input.reads[1]}"
+            QA_ALIGN = "bwa mem -t {threads} -R '@RG\\tID:1\\tLB:{sample}\\tPL:illumina\\tSM:{sample}\\tPU:{sample}' {params.ref} {input.reads[0]} {input.reads[1]}"
 
         rule qa_align_reads:
             input:
