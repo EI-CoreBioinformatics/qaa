@@ -236,7 +236,8 @@ class QAA_Runner(object):
         self.unlock = args.unlock
 
     def _clean_blobtools_trash(self):
-        import glob		
+        import glob	
+        print("QAA_CLEANUP:", os.getcwd())	
         for f in glob.glob(os.path.join(os.getcwd(), "*.bam.cov")):
             try:
                 if os.path.isfile(f):
@@ -246,6 +247,7 @@ class QAA_Runner(object):
 
     def run(self):
         run_result = run_snakemake(os.path.join(os.path.dirname(__file__), "zzz", "qaa.smk.py"), self.output_dir, self.new_config_file, self.exe_env, dryrun=False, unlock=self.unlock)
+        print("QAA_RUN_RESULT=", run_result)
         self.report()
         self._clean_blobtools_trash()
         return run_result
