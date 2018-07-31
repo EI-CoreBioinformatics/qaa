@@ -102,7 +102,7 @@ if config["run_multiqc"]:
             " --file-list {params.mqc_files} > {log}"
 
 if config["run_proteome_module"]:
-    rule qa_busco_prot:
+    rule qaa_busco_prot:
         input:
             busco_input = getProteins
         output:
@@ -131,7 +131,7 @@ if config["run_proteome_module"]:
 
 
 if config["run_transcriptome_module"]:
-    rule qa_busco_tran:
+    rule qaa_busco_tran:
         input:
             busco_input = getTranscripts
         output:
@@ -161,7 +161,7 @@ if config["run_transcriptome_module"]:
 
 if config["run_genome_module"]:
     if config["run_busco"]:
-        rule qa_busco_geno:
+        rule qaa_busco_geno:
             input:
                 busco_input = getAssembly
             output:
@@ -188,7 +188,7 @@ if config["run_genome_module"]:
                 " && rm -rf {params.outdir}" + \
                 " && mv {params.final_outdir}/short_summary_{wildcards.sample}.txt {params.final_outdir}/{wildcards.sample}_short_summary.txt"
 
-    rule qa_quast:
+    rule qaa_quast:
         input:
             assembly = getAssembly
         output:
@@ -218,7 +218,7 @@ if config["run_genome_module"]:
             QA_ALIGN_BUILD_INDEX = "bwa index -p {params.ref} {input.assembly}"
             QA_ALIGN = "bwa mem -t {threads} -R '@RG\\tID:1\\tLB:{sample}\\tPL:illumina\\tSM:{sample}\\tPU:{sample}' {params.ref} {input.reads[0]} {input.reads[1]}"
 
-        rule qa_align_reads:
+        rule qaa_align_reads:
             input:
                 reads = getReads,
                 assembly = getAssembly
@@ -249,7 +249,7 @@ if config["run_genome_module"]:
                 " 2> {log}"
 
     if config["run_blobtools"]:
-        rule qa_qualimap:
+        rule qaa_qualimap:
             input:
                 bam = join(qaa_env.bam_dir, "{sample}", "{sample}.align_reads.bam") if config["align_reads"] else getBAM,
             output:
@@ -267,7 +267,7 @@ if config["run_genome_module"]:
                TIME_CMD + " qualimap --java-mem-size={params.mem} bamqc " + \
                "-bam {input.bam} -nt {threads} -outdir {params.outdir} &> {log}"
 
-        rule qa_blast:
+        rule qaa_blastn:
             input:
                 assembly = getAssembly
             output:
@@ -287,7 +287,7 @@ if config["run_genome_module"]:
                 " -culling_limit 5 -num_threads {threads} -evalue 1e-25 -max_target_seqs 10 -max_hsps 1 -perc_identity 75" + \
                 " -out {output.tsv} &> {log}"
 
-        rule qa_blobtools:
+        rule qaa_blobtools:
             input:
                 bam = join(qaa_env.bam_dir, "{sample}", "{sample}.align_reads.bam") if config["align_reads"] else getBAM,
                 blast = join(qaa_env.blast_dir, "{sample}", "{sample}.blast.tsv"),
