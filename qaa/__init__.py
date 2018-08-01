@@ -171,7 +171,7 @@ class QAA_Runner(object):
         import json
         print("HPCCONFIG", args.hpc_config, file=sys.stderr)
         data = json.load(open(args.hpc_config))
-        qmem = str((int(int(data["qa_qualimap"]["memory"]) / 1000)) - 2) + "G"
+        qmem = str((int(int(data["qaa_qualimap"]["memory"]) / 1000)) - 2) + "G"
         self.config["qualimap_mem"] = qmem
 
                 	
