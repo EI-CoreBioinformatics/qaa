@@ -186,9 +186,8 @@ if config["run_genome_module"]:
                 " --force -t {params.tmp} -l {params.busco_data} -o {wildcards.sample} &> {log}" + \
                 " || touch {params.outdir}/short_summary_{wildcards.sample}.txt)\"" + \
                 # " && cd " + qaa_env.cwd + \
-                " && mv -fv {params.outdir} {params.final_outdir}" + \
-                # " && mkdir -p {params.final_outdir} && mv -v {params.outdir}/* {params.final_outdir}/" + \
-                # " && rm -rf {params.outdir}" + \
+                " && mkdir -p {params.final_outdir} && mv -v {params.outdir}/* {params.final_outdir}/" + \
+                " && rm -rf {params.outdir}" + \
                 " && mv {params.final_outdir}/short_summary_{wildcards.sample}.txt {params.final_outdir}/{wildcards.sample}_short_summary.txt"
 
     rule qaa_quast:
