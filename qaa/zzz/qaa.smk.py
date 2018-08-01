@@ -182,10 +182,13 @@ if config["run_genome_module"]:
                 qaa_env.busco_init_dir + " {params.outdir} && cd {params.outdir} && cd .. &&" + \
                 " {params.load}" + TIME_CMD + \
                 # " run_BUSCO.py -i " + join(qaa_env.cwd, "{input.busco_input}") + " -c {threads} -m {params.busco_mode}" + \
-                " run_BUSCO.py -i {params.inputpath} -c {threads} -m {params.busco_mode}" + \
-                " --force -t {params.tmp} -l {params.busco_data} -o {wildcards.sample} &> {log} && cd " + qaa_env.cwd + \
-                " && mkdir -p {params.final_outdir} && mv -v {params.outdir}/* {params.final_outdir}/" + \
-                " && rm -rf {params.outdir}" + \
+                " bash -c \"(run_BUSCO.py -i {params.inputpath} -c {threads} -m {params.busco_mode}" + \
+                " --force -t {params.tmp} -l {params.busco_data} -o {wildcards.sample} &> {log}" + \
+                " || touch {params.outdir}/short_summary_{wildcards.sample}.txt)\"" + \
+                # " && cd " + qaa_env.cwd + \
+                " && mv -v {params.outdir} {params.final_outdir}" + \
+                # " && mkdir -p {params.final_outdir} && mv -v {params.outdir}/* {params.final_outdir}/" + \
+                # " && rm -rf {params.outdir}" + \
                 " && mv {params.final_outdir}/short_summary_{wildcards.sample}.txt {params.final_outdir}/{wildcards.sample}_short_summary.txt"
 
     rule qaa_quast:
