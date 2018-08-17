@@ -102,7 +102,6 @@ setup(
 	keywords="genome assembly quality control",
 	packages=find_packages(exclude=["test"]),
 	entry_points={"console_scripts": ["qaa = qaa.__main__:main"]},
-	# install_requires=[line.rstrip() for line in open("requirements.txt", "rt")],
 	test_suite="nose.collector",
 
 	install_requires=install_requires,
@@ -114,7 +113,7 @@ setup(
 	},
 	include_package_data=True,
 	data_files=[("etc", ["etc/qaa_config.yaml", "etc/hpc_config.json"]), ("etc/util", ["etc/util/busco_init_dir"])],
-	# scripts=["bin/eimethyl_sub"],
+	scripts=["bin/qaa_sub"],
 	cmdclass={
 		'install_all': InstallAll
 	}
