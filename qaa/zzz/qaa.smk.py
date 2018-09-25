@@ -210,11 +210,11 @@ if config["run_genome_module"]:
         if config["align_reads"] == "bowtie2":
             QA_ALIGN_LOAD = loadPreCmd(config["load"]["blob_bowtie2"])
             QA_ALIGN_BUILD_INDEX = "bowtie2-build --threads {threads} {input.assembly} {params.ref}"
-            QA_ALIGN = "bowtie2 --threads {params.align_threads} -x {params.ref} -1 {input.reads[0]} -2 {input.reads[1]} --rg-id {sample} --rg LB:{sample} --rg PL:illumina --rg SM:{sample} --rg PU:{sample}"
+            QA_ALIGN = "bowtie2 --threads {params.align_threads} -x {params.ref} -1 {input.reads[0]} -2 {input.reads[1]} --rg-id {params.sample} --rg LB:{params.sample} --rg PL:illumina --rg SM:{params.sample} --rg PU:{params.sample}"
         else: # bwa
             QA_ALIGN_LOAD = loadPreCmd(config["load"]["blob_bwa"])
             QA_ALIGN_BUILD_INDEX = "bwa index -p {params.ref} {input.assembly}"
-            QA_ALIGN = "bwa mem -t {threads} -R '@RG\\tID:1\\tLB:{sample}\\tPL:illumina\\tSM:{sample}\\tPU:{sample}' {params.ref} {input.reads[0]} {input.reads[1]}"
+            QA_ALIGN = "bwa mem -t {threads} -R '@RG\\tID:1\\tLB:{params.sample}\\tPL:illumina\\tSM:{params.sample}\\tPU:{params.sample}' {params.ref} {input.reads[0]} {input.reads[1]}"
 
         rule qaa_align_reads:
             input:
@@ -228,22 +228,28 @@ if config["run_genome_module"]:
                 outdir = lambda wildcards: join(qaa_env.bam_dir, wildcards.sample),
                 ref = lambda wildcards: join(qaa_env.bam_dir, wildcards.sample, wildcards.sample + ".assembly.fasta"),
                 outbam = lambda wildcards: join(qaa_env.bam_dir, wildcards.sample, wildcards.sample, ".align_reads.bam"),
-                align_threads = BAM_THREADS / 2,
-                sort_threads = BAM_THREADS / 2,
+                align_threads = BAM_THREADS // 2,
+                sort_threads = BAM_THREADS // 2,
                 load_align = QA_ALIGN_LOAD, #loadPreCmd(config["load"]["blob_bowtie2"]),
                 load_markdup = loadPreCmd(config["load"]["picard"]),
-                cmd_markdup = loadPreCmd(config["cmd"]["picard_markdup"], is_dependency=False)
+                cmd_markdup = loadPreCmd(config["cmd"]["picard_markdup"], is_dependency=False),
+                sample = lambda wildcards: wildcards.sample
             threads:
                 BAM_THREADS
             shell:
                 "{params.load_align}" + \
                 TIME_CMD + " " + QA_ALIGN_BUILD_INDEX + " &&" + \
+                " touch {output.bam}.ref_index.done &&" + \
                 " " + TIME_CMD + " " + QA_ALIGN + " |" + \
                 " samtools sort -@ {params.sort_threads} -o {output.bam}.tmp.bam - &&" + \
+                " touch {output.bam}.sort.done &&" + \
                 " {params.load_markdup}" + \
                 TIME_CMD + " {params.cmd_markdup}" + \
                 " INPUT={output.bam}.tmp.bam OUTPUT={output.bam} METRICS_FILE={output.bam}.metrics.txt REMOVE_DUPLICATES=true ASSUME_SORT_ORDER=coordinate &&" + \
+                " touch {output.bam}.markdup.done &&" + \
                 " samtools index {output.bam} &&" + \
+                " touch {output.bam}.index.done &&" + \
+                " rm {output.bam}.tmp.bam" + \
                 " 2> {log}"
 
     if config["run_blobtools"]:
@@ -297,12 +303,13 @@ if config["run_genome_module"]:
             params:
                 prefix = lambda wildcards: join(qaa_env.blob_dir, wildcards.sample, wildcards.sample),
                 load = loadPreCmd(config["load"]["blobtools"]),
-                taxlevel = "family"
+                taxlevel = "family",
+                min_contiglen = config["quast_mincontiglen"] # 1000
             threads:
                 1
             shell:
                 "{params.load}" + TIME_CMD + \
                 " blobtools create -i {input.assembly} -b {input.bam} -t {input.blast} -o {params.prefix} &&" + \
                 " blobtools view -i {params.prefix}.blobDB.json -o $(dirname {params.prefix})/ -r {params.taxlevel} &&" + \
-                " blobtools blobplot -r {params.taxlevel} -l 1000 -i {params.prefix}.blobDB.json -o $(dirname {params.prefix})/" + \
+                " blobtools blobplot -r {params.taxlevel} -l {params.min_contiglen} -i {params.prefix}.blobDB.json -o $(dirname {params.prefix})/" + \
                 " &> {log}"                
