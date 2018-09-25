@@ -11,9 +11,9 @@ load:
   multiqc: "source multiqc-1.5_ei"
 
 cmd:
-  quast: "python2 /tgac/software/testing/quast/4.3/x86_64/bin/quast.py"
+  quast: "python2 /ei/software/testing/quast/4.3/x86_64/bin/quast.py"
 
 resources:
   blob_blastdb: "/ei/public/databases/blast/ncbi/nt_20171013/nt"
-  busco_databases: "/tgac/workarea/group-pb/BUSCO_DATABASES/odb9"
-  multiqc_config: "/tgac/software/testing/bgrrl/0.1/src/ei_bgrrl/bgrrl/etc/multiqc_config.yaml"
+  busco_databases: "/ei/workarea/group-pb/BUSCO_DATABASES/odb9"
+  multiqc_config: "/ei/software/testing/bgrrl/0.1/src/ei_bgrrl/bgrrl/etc/multiqc_config.yaml"
