@@ -303,7 +303,7 @@ if config["run_genome_module"]:
             params:
                 prefix = lambda wildcards: join(qaa_env.blob_dir, wildcards.sample, wildcards.sample),
                 load = loadPreCmd(config["load"]["blobtools"]),
-                taxlevel = "family",
+                taxlevel = "genus",
                 min_contiglen = config["quast_mincontiglen"] # 1000
             threads:
                 1
