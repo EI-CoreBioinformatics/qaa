@@ -8,10 +8,11 @@ from collections import Counter, namedtuple
 # BlobSample = namedtuple("BlobSample", "sample ncontigs dom_org dom_org_ncontigs dom_org_perc dom_org_span subdom_org subdom_org_ncontigs subdom_org_perc subdom_org_span".split(" "))
 
 BlobSampleFields = "sample size ncontigs" + \
-                   " Pgbp Pgbp_size Pgbp_size_pc Pgbp_ctg Pgbp_ctg_pc" + \
-                   " Pgct Pgct_size Pgct_size_pc Pgct_ctg Pgct_ctg_pc" + \
-                   " Sgbp Sgbp_size Sgbp_size_pc Sgbp_ctg Sgbp_ctg_pc" + \
-                   " Sgct Sgct_size Sgct_size_pc Sgct_ctg Sgct_ctg_pc"
+                   " Pgbp Pgct Sgbp Sgct" + \
+                   " Pgbp_size Pgbp_size_pc Pgbp_ctg Pgbp_ctg_pc" + \
+                   " Pgct_size Pgct_size_pc Pgct_ctg Pgct_ctg_pc" + \
+                   " Sgbp_size Sgbp_size_pc Sgbp_ctg Sgbp_ctg_pc" + \
+                   " Sgct_size Sgct_size_pc Sgct_ctg Sgct_ctg_pc"
 
 BlobSample = namedtuple("BlobSample", BlobSampleFields.split(" "))
 
