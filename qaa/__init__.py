@@ -10,6 +10,7 @@ from eicore.external_process.snakemake_helper import *
 from qaa.reporting.busco_report import compileBUSCOReport
 from qaa.reporting.quast_report import compileQUASTReport
 from qaa.reporting.blobtools_report import compileBlobReport
+from qaa.reporting.sixteen_s_reporter import SixteenSReporter, HEADER as sixteenS_header
 
 __title__ = "qaa"
 __author__ = 'Christian Schudoma (cschu)'
@@ -229,6 +230,9 @@ class QAA_Runner(object):
         self.config["run_proteome_module"] = self.runmode != "survey" and {"prot", "proteome"}.intersection(requested_modes)
 
         self.config["quast_mincontiglen"] = args.quast_mincontiglen if hasattr(args, "quast_mincontiglen") else 0
+
+        self.config["annotation"] = args.annotation if hasattr(args, "annotation") else None
+
         self.new_config_file = os.path.join(self.output_dir, "qaa.conf.yaml")
         with open(self.new_config_file, "w") as conf_out:
             yaml.dump(self.config, conf_out, default_flow_style=False)
@@ -274,4 +278,6 @@ class QAA_Runner(object):
             report_func(os.path.join(self.output_dir, "qa", "asm", "blobtools"), os.path.join(self.report_dir, "blobtools_report.tsv"), compileBlobReport)
         if self.config["run_transcriptome_module"] or self.config["run_proteome_module"]:
             report_func(os.path.join(self.output_dir, "qa", "asm", "busco"), os.path.join(self.report_dir, "busco_report.tsv"), compileBUSCOReport)
-
+        if self.config["annotation"] is not None:
+            with open(os.path.join(self.report_dir, "16S_report.tsv"), "wt") as ostream:
+                SixteenSReporter(os.path.join(self.output_dir, "annotation", "prokka"), header=sixteenS_header, out=ostream).generateReport()
