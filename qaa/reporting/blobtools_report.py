@@ -8,24 +8,20 @@ from collections import Counter, namedtuple
 # BlobSample = namedtuple("BlobSample", "sample ncontigs dom_org dom_org_ncontigs dom_org_perc dom_org_span subdom_org subdom_org_ncontigs subdom_org_perc subdom_org_span".split(" "))
 
 BlobSampleFields = "sample size ncontigs" + \
-                   " Pgbp Pgct Sgbp Sgct" + \
-                   " Pgbp_size Pgbp_size_pc Pgbp_ctg Pgbp_ctg_pc" + \
-                   " Pgct_size Pgct_size_pc Pgct_ctg Pgct_ctg_pc" + \
-                   " Sgbp_size Sgbp_size_pc Sgbp_ctg Sgbp_ctg_pc" + \
-                   " Sgct_size Sgct_size_pc Sgct_ctg Sgct_ctg_pc"
+                   " Pgbp Pgbp_size Pgbp_size_pc Pgbp_ctg Pgbp_ctg_pc" + \
+                   " Pgct Pgct_size Pgct_size_pc Pgct_ctg Pgct_ctg_pc" + \
+                   " Sgbp Sgbp_size Sgbp_size_pc Sgbp_ctg Sgbp_ctg_pc" + \
+                   " Sgct Sgct_size Sgct_size_pc Sgct_ctg Sgct_ctg_pc"
 
 BlobSample = namedtuple("BlobSample", BlobSampleFields.split(" "))
 
 HEADER = [
-          "Sample", "size [bp]", "#contigs", 
-          "Predominant genus by size (Pgbp)", "Predominant genus by contig (Pgct)",
-          "size (Pgbp) [bp]", "%size (Pgbp)", "#contigs (Pgbp)", "%contigs (Pgbp)",  
-          "size (Pgct) [bp]", "%size (Pgct)", "#contigs (Pgct)", "%contigs (Pgct)",  
-          "Subdominant genus by size (Sgbp)", "Subdominant genus by contig (Sgct)",
-          "size (Sgbp) [bp]", "%size (Sgbp)", "#contigs (Sgbp)", "%contigs (Sgbp)",  
-          "size (Sgct) [bp]", "%size (Sgct)", "#contigs (Sgct)", "%contigs (Sgct)",
-         ] 
-
+          "Sample", "Assembly size [bp] (asmsize)", "#Contigs",
+          "Predominant genus by size (Pgbp)", "Size (Pgbp) [bp]", "Size (Pgbp) / asmsize", "#Contigs (Pgbp)", "#Contigs (Pgbp) / #Contigs",
+          "Predominant genus by contig (Pgct)", "Size (Pgct) [bp]", "Size (Pgct) / asmsize", "#Contigs (Pgct)", "#Contigs (Pgct) / #Contigs",
+          "Subdominant genus by size (Sgbp)", "Size (Sgbp) [bp]", "Size (Sgbp) / asmsize", "#Contigs (Sgbp)", "#Contigs (Sgbp) / #Contigs",
+          "Subdominant genus by contig (Sgct)", "Size (Sgct) [bp]", "Size (Sgct) / asmsize", "#Contigs (Sgct)", "#Contigs (Sgct) / #Contigs",
+         ]
 
 def compileBlobReport(blob_dir, out=sys.stdout):
     print("Running BLOBREPORT... " + blob_dir)
@@ -62,21 +58,21 @@ def compileBlobReport(blob_dir, out=sys.stdout):
                                    totalsize,
                                    ncontigs,
                                    pdomorg_by_size[0],                      
-                                   pdomorg_by_nctg[0],
-                                   sdomorg_by_size[0] if sdomorg_by_size[0] is not None else "NA",                      
-                                   sdomorg_by_nctg[0] if sdomorg_by_nctg[0] is not None else "NA",
                                    spancounter[pdomorg_by_size[0]],
                                    spancounter[pdomorg_by_size[0]] / totalsize if totalsize else None,
                                    taxcounter[pdomorg_by_size[0]],                                                                      
                                    taxcounter[pdomorg_by_size[0]] / ncontigs if ncontigs else None,
+                                   pdomorg_by_nctg[0],
                                    spancounter[pdomorg_by_nctg[0]],
                                    spancounter[pdomorg_by_nctg[0]] / totalsize if totalsize else None,
                                    taxcounter[pdomorg_by_nctg[0]],                                                                      
                                    taxcounter[pdomorg_by_nctg[0]] / ncontigs if ncontigs else None,
+                                   sdomorg_by_size[0] if sdomorg_by_size[0] is not None else "NA",                      
                                    spancounter[sdomorg_by_size[0]],
                                    spancounter[sdomorg_by_size[0]] / totalsize if totalsize else None,
                                    taxcounter[sdomorg_by_size[0]],                                                                      
                                    taxcounter[sdomorg_by_size[0]] / ncontigs if ncontigs else None,
+                                   sdomorg_by_nctg[0] if sdomorg_by_nctg[0] is not None else "NA",
                                    spancounter[sdomorg_by_nctg[0]],
                                    spancounter[sdomorg_by_nctg[0]] / totalsize if totalsize else None,
                                    taxcounter[sdomorg_by_nctg[0]],                                                                      
