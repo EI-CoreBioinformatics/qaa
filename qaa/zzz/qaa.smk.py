@@ -3,14 +3,17 @@ import csv
 import os
 from os.path import join, basename, dirname
 
-from qaa import readSamplesheet, loadPreCmd, TIME_CMD
+from qaa.samplesheet import readQAASamplesheet
+from qaa.cmdload import loadPreCmd
 from qaa import QAA_Environment
+
+TIME_CMD = config.get("tools", dict()).get("time", "/usr/bin/time -v")
 
 # setup I/O
 if type(config["samplesheet"]) is str:
-        INPUTFILES = dict(readSamplesheet(csv.reader(open(config["samplesheet"]), delimiter=",")))
+        INPUTFILES = dict(readQAASamplesheet(csv.reader(open(config["samplesheet"]), delimiter=",")))
 else:
-        INPUTFILES = dict(readSamplesheet(config["samplesheet"]))
+        INPUTFILES = dict(readQAASamplesheet(config["samplesheet"]))
 with open("qaa-inputfiles.txt", "w") as input_out:
         print(*INPUTFILES.values(), sep="\n", file=input_out)
 
