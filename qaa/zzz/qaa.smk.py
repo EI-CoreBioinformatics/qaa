@@ -287,9 +287,10 @@ if config["run_genome_module"]:
             shell: 
                 "{params.load}" + TIME_CMD + \
                 " blastn -db {params.blastdb} -task megablast -query {input.assembly}" + \
-                " -outfmt '6 qseqid staxids score staxid bitscore std sscinames sskingdoms stitle'" + \
-                " -culling_limit 5 -num_threads {threads} -evalue 1e-25 -max_target_seqs 10 -max_hsps 1 -perc_identity 75" + \
-                " -out {output.tsv} &> {log}"
+                " -outfmt '6 qseqid staxids bitscore std sscinames sskingdoms stitle'" + \
+                " -culling_limit 5 -num_threads {threads} -evalue 1e-25 -max_hsps 1 -max_target_seqs 999999 -perc_identity 75" + \
+                " | sort -k1,1 -k3,3gr | awk -v FS=\"\\t\" -v OFS=\"\\t\" '{{ if (seen[$1] < 10) {{ seen[$1] += 1; print $0; }} }}'" + \
+                " > {output.tsv} 2> {log}"
 
         rule qaa_blobtools:
             input:
