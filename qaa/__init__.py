@@ -5,6 +5,7 @@ import csv
 from collections import namedtuple
 import yaml
 import sys
+from copy import copy
 
 from eicore.external_process.snakemake_helper import *
 from qaa.reporting.busco_report import compileBUSCOReport
@@ -19,14 +20,9 @@ __copyright__ = 'Copyright 2018 Earlham Institute'
 __version__ = pkg_resources.require("qaa")[0].version
 
 
-ETC_DIR = os.path.join(os.path.dirname(__file__), "..", "etc")
-DEFAULT_HPC_CONFIG_FILE = os.path.join(ETC_DIR, "hpc_config.json")
-DEFAULT_CONFIG_FILE = os.path.join(ETC_DIR, "qaa_config.yaml")
-
-QAA_SAMPLESHEET_COLUMNS = "id assembly bamfile r1 r2 busco_id transcripts proteins".split(" ")
-QAA_Sample = namedtuple("QAA_Sample", QAA_SAMPLESHEET_COLUMNS)
-
-TIME_CMD = " /usr/bin/time -v"
+ETC_DIR = join(dirname(__file__), "..", "etc")
+DEFAULT_HPC_CONFIG_FILE = join(ETC_DIR, "hpc_config.json")
+DEFAULT_CONFIG_FILE = join(ETC_DIR, "qaa_config.yaml")
 QAA_ID = "XXX"
 
 class QAA_ArgumentsAdapter(object):
@@ -65,47 +61,13 @@ class QAA_Environment(object):
         self.blast_dir = join(self.qa_dir, "blast")
         self.bam_dir = join(self.qa_dir, "bam")
 
-
-"""
-qaa_args = {
-        # "config": qaa_config_file,
-        "make_input_stream": True,
-        "no_blobtools": False,
-        "blobtools_no_bwa": False,
-        "quast_mincontiglen": 1000,
-        "busco_db": "bacteria_odb9",
-        "qaa_mode": "genome",
-        "no_multiqc": True,
-        "project_prefix": args.project_prefix,
-        "config": bgrrl_config_file,
-        "hpc_config": args.hpc_config}
-"""
-
-def readSamplesheet(_in):
-    import csv
-    for row in _in:
-        if row and row[0]:
-            row.extend([""] * max(0, len(QAA_SAMPLESHEET_COLUMNS) - len(row)))
-            yield (row[0], QAA_Sample(*row))
-
-def loadPreCmd(command, is_dependency=True):
-    '''
-    Used to prefix a shell command that utilises some external software with another command used to load that software
-    '''
-    if command:
-        cc = command.strip()
-        if cc != "":
-            if is_dependency:
-                return "set +u && {} &&".format(cc)
-            else:
-                return " {} ".format(cc)
-    return ""
+        self.prokka_dir = join(self.output_dir, "annotation", "prokka")
 
 class QAA_Runner(object):
-    def __init__(self, args): #, **kwargs):
+    def __init__(self, args):
         print("QAA_RUNNER:__init__")
-        def _create_input_stream(args):
-            print("QAA_RUNNER:_create_input_stream", args, sep="\n")
+        def __create_input_stream(args):
+            print("QAA_RUNNER:__create_input_stream", args, sep="\n")
             stream, asm_path = list(), ""
             for row in csv.reader(open(args.input), delimiter=","):
                 if args.runmode == "asm":
@@ -120,21 +82,15 @@ class QAA_Runner(object):
             return stream
 
 
-        #print("Assimilating kwargs ... ", end="", flush=True)
-        from copy import copy
-        args = copy(args)
-        # for k in kwargs:
-        #    setattr(args, k, kwargs[k])
-        #print(" done.")
-	#print()
+        args = copy(args) # ???
         print("QAAA_ARGS:", args, file=sys.stderr)
 
         print("Configuring execution environment ... ", end="", flush=True)
         self.output_dir = args.output_dir
-        self.report_dir = os.path.join(self.output_dir, "reports")
+        self.report_dir = join(self.output_dir, "reports")
         if not os.path.exists(self.report_dir):
         	os.makedirs(self.report_dir)
-        self.logs_dir = os.path.join(self.output_dir, "hpc_logs")
+        self.logs_dir = join(self.output_dir, "hpc_logs")
         self.exe_env = ExecutionEnvironment(args, NOW, job_suffix=args.input + "_" + self.output_dir, log_dir=self.logs_dir)
         print("done.")
         print(str(self.exe_env))
@@ -177,7 +133,7 @@ class QAA_Runner(object):
 
                 	
         if hasattr(args, "make_input_stream"):
-            self.config["samplesheet"] = _create_input_stream(args)
+            self.config["samplesheet"] = __create_input_stream(args)
             self.config["has_stream"] = True
             self.config["full_samplesheet"] = args.input
         else:
@@ -185,9 +141,8 @@ class QAA_Runner(object):
             self.config["full_samplesheet"] = self.config["samplesheet"] = args.input
 
         self.config["out_dir"] = self.output_dir
-        self.config["etc"] = os.path.join(os.path.dirname(__file__), "..", "etc")
+        self.config["etc"] = join(dirname(__file__), "..", "etc")
         self.config["cwd"] = os.getcwd()
-        # self.config["blobtools_run_bwa"] = not args.blobtools_no_bwa
         self.config["create_bam"] = args.align_reads != "no"
         self.config["align_reads"] = args.align_reads if args.align_reads != "no" else False
 
@@ -213,36 +168,29 @@ class QAA_Runner(object):
         except:
             pass
 
-        # self.config["no_multiqc"] = args.no_multiqc if hasattr(args, "no_multiqc") else False # api
         self.config["run_multiqc"] = args.run_multiqc if hasattr(args, "run_multiqc") else True # api
-
         self.config["multiqc_dir"] = args.multiqc_dir if hasattr(args, "multiqc_dir") else "."
-        self.config["survey_assembly"] = self.runmode == "survey" # args.survey_assembly # api
-        # self.config["no_blobtools"] = args.no_blobtools if hasattr(args, "no_blobtools") else False # api
+        self.config["survey_assembly"] = self.runmode == "survey" # api
         self.config["run_blobtools"] = args.run_blobtools if hasattr(args, "run_blobtools") else True # api
-        # self.config["no_busco"] = args.no_busco if hasattr(args, "no_busco") else False # api
         self.config["run_busco"] = args.run_busco if hasattr(args, "run_busco") else True # api
-        # self.config["run_genome_module"] = args.survey_assembly or ("geno" in requested_modes or "genome" in requested_modes)
         self.config["run_genome_module"] = self.runmode == "survey" or {"geno", "genome"}.intersection(requested_modes)
-        # self.config["run_transcriptome_module"] = not args.survey_assembly and ("tran" in requested_modes or "transcriptome" in requested_modes)
         self.config["run_transcriptome_module"] = self.runmode != "survey" and {"tran", "transcriptome"}.intersection(requested_modes)
-        # self.config["run_proteome_module"] = not args.survey_assembly and ("prot" in requested_modes or "proteome" in requested_modes)
         self.config["run_proteome_module"] = self.runmode != "survey" and {"prot", "proteome"}.intersection(requested_modes)
-
         self.config["quast_mincontiglen"] = args.quast_mincontiglen if hasattr(args, "quast_mincontiglen") else 0
-
         self.config["annotation"] = args.annotation if hasattr(args, "annotation") else None
 
-        self.new_config_file = os.path.join(self.output_dir, "qaa.conf.yaml")
+        self.new_config_file = join(self.output_dir, "qaa.conf.yaml")
         with open(self.new_config_file, "w") as conf_out:
             yaml.dump(self.config, conf_out, default_flow_style=False)
 
+        self.qaa_env = QAA_Environment(self.config)
+
         self.unlock = args.unlock
 
-    def _clean_blobtools_trash(self):
+    def __clean_blobtools_trash(self):
         import glob	
         print("QAA_CLEANUP:", os.getcwd())	
-        for f in glob.glob(os.path.join(os.getcwd(), "*.bam.cov")):
+        for f in glob.glob(join(os.getcwd(), "*.bam.cov")):
             try:
                 if os.path.isfile(f):
                     os.unlink(f)
@@ -250,10 +198,10 @@ class QAA_Runner(object):
                 print(e)
 
     def run(self):
-        run_result = run_snakemake(os.path.join(os.path.dirname(__file__), "zzz", "qaa.smk.py"), self.output_dir, self.new_config_file, self.exe_env, dryrun=False, unlock=self.unlock)
+        run_result = run_snakemake(join(dirname(__file__), "zzz", "qaa.smk.py"), self.output_dir, self.new_config_file, self.exe_env, dryrun=False, unlock=self.unlock)
         print("QAA_RUN_RESULT=", run_result)
         self.report()
-        self._clean_blobtools_trash()
+        self.__clean_blobtools_trash()
         return run_result
 
     def report(self):
@@ -264,20 +212,29 @@ class QAA_Runner(object):
         print("QAA_CONFIG_!!!")
         print(self.config)
 
-        if self.runmode == "survey": #if self.config["survey_assembly"]:
-            report_func(os.path.join(self.output_dir, "qa", "survey", "quast"), os.path.join(self.report_dir, "quast_survey_report.tsv"), compileQUASTReport)
-            if self.config["run_busco"]: # if not self.config["no_busco"]:
-                report_func(os.path.join(self.output_dir, "qa", "survey", "busco", "geno"), os.path.join(self.report_dir, "busco_survey_report.tsv"), compileBUSCOReport)
-            if self.config["run_blobtools"]: # if not self.config["no_blobtools"]:
-                report_func(os.path.join(self.output_dir, "qa", "survey", "blobtools"), os.path.join(self.report_dir, "blobtools_survey_report.tsv"), compileBlobReport)
-        if self.config["run_genome_module"]:
-            report_func(os.path.join(self.output_dir, "qa", "asm", "quast"), os.path.join(self.report_dir, "quast_report.tsv"), compileQUASTReport)
-        if self.config["run_busco"]: # if not self.config["no_busco"]:
-            report_func(os.path.join(self.output_dir, "qa", "asm", "busco", "geno"), os.path.join(self.report_dir, "busco_genome_report.tsv"), compileBUSCOReport)
-        if self.config["run_blobtools"]: #if not self.config["no_blobtools"]:
-            report_func(os.path.join(self.output_dir, "qa", "asm", "blobtools"), os.path.join(self.report_dir, "blobtools_report.tsv"), compileBlobReport)
-        if self.config["run_transcriptome_module"] or self.config["run_proteome_module"]:
-            report_func(os.path.join(self.output_dir, "qa", "asm", "busco"), os.path.join(self.report_dir, "busco_report.tsv"), compileBUSCOReport)
-        if self.config["annotation"] is not None:
-            with open(os.path.join(self.report_dir, "16S_report.tsv"), "wt") as ostream:
-                SixteenSReporter(os.path.join(self.output_dir, "annotation", "prokka"), header=sixteenS_header, out=ostream).generateReport()
+        if self.runmode == "survey":
+            # report_func(join(self.output_dir, "qa", "survey", "quast"), join(self.report_dir, "quast_survey_report.tsv"), compileQUASTReport)
+            report_func(self.qaa_env.quast_dir, join(self.report_dir, "quast_survey_report.tsv"), compileQUASTReport)
+            if self.config["run_busco"]:
+                # report_func(join(self.output_dir, "qa", "survey", "busco", "geno"), join(self.report_dir, "busco_survey_report.tsv"), compileBUSCOReport)
+                report_func(self.qaa_env.busco_geno_dir, join(self.report_dir, "busco_survey_report.tsv"), compileBUSCOReport)
+            if self.config["run_blobtools"]:
+                # report_func(join(self.output_dir, "qa", "survey", "blobtools"), join(self.report_dir, "blobtools_survey_report.tsv"), compileBlobReport)
+                report_func(self.qaa_env.blob_dir, join(self.report_dir, "blobtools_survey_report.tsv"), compileBlobReport)
+        elif self.runmode == "asm":
+            if self.config["run_genome_module"]:
+                # report_func(join(self.output_dir, "qa", "asm", "quast"), join(self.report_dir, "quast_report.tsv"), compileQUASTReport)
+                report_func(self.qaa_env.quast_dir, join(self.report_dir, "quast_report.tsv"), compileQUASTReport)
+            if self.config["run_busco"]:
+                # report_func(join(self.output_dir, "qa", "asm", "busco", "geno"), join(self.report_dir, "busco_genome_report.tsv"), compileBUSCOReport)
+                report_func(self.qaa_env.busco_geno_dir, join(self.report_dir, "busco_genome_report.tsv"), compileBUSCOReport)
+            if self.config["run_blobtools"]:
+                # report_func(join(self.output_dir, "qa", "asm", "blobtools"), join(self.report_dir, "blobtools_report.tsv"), compileBlobReport)
+                report_func(self.qaa_env.blob_dir, join(self.report_dir, "blobtools_report.tsv"), compileBlobReport)
+            if self.config["run_transcriptome_module"] or self.config["run_proteome_module"]:
+                # report_func(join(self.output_dir, "qa", "asm", "busco"), join(self.report_dir, "busco_report.tsv"), compileBUSCOReport)
+                report_func(self.qaa_env.busco_dir, join(self.report_dir, "busco_report.tsv"), compileBUSCOReport)
+            if self.config["annotation"] is not None:
+                with open(join(self.report_dir, "16S_report.tsv"), "wt") as ostream:
+                    # SixteenSReporter(join(self.output_dir, "annotation", "prokka"), header=sixteenS_header, out=ostream).generateReport()
+                    SixteenSReporter(self.qaa_env.prokka_dir, header=sixteenS_header, out=ostream).generateReport()
