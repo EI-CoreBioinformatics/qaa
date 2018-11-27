@@ -312,7 +312,8 @@ if config["run_genome_module"]:
             threads:
                 1
             shell:
-                "{params.load}" + TIME_CMD + \
+                # "{params.load}" + TIME_CMD + \
+                "set +u && unset PYTHONPATH && echo PYTHONPATH=$PYTHONPATH && source activate qaa_blobtools_env &&" + \
                 " blobtools create -i {input.assembly} -b {input.bam} -t {input.blast} -o {params.prefix} &&" + \
                 " blobtools view -i {params.prefix}.blobDB.json -o $(dirname {params.prefix})/ -r {params.taxlevel} &&" + \
                 " blobtools blobplot -r {params.taxlevel} -l {params.min_contiglen} -i {params.prefix}.blobDB.json -o $(dirname {params.prefix})/" + \
