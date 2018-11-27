@@ -7,7 +7,7 @@ import yaml
 import sys
 from copy import copy
 
-from eicore.external_process.snakemake_helper import *
+from .snakemake_helper import *
 from qaa.reporting.busco_report import compileBUSCOReport
 from qaa.reporting.quast_report import compileQUASTReport
 from qaa.reporting.blobtools_report import compileBlobReport

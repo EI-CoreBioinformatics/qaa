@@ -9,8 +9,7 @@ from collections import defaultdict, namedtuple
 import yaml
 from snakemake.utils import min_version
 
-from eicore import NOW
-from eicore.external_process.snakemake_helper import *
+from .snakemake_helper import *
 from . import DEFAULT_CONFIG_FILE, DEFAULT_HPC_CONFIG_FILE, __version__, QAA_Runner
 
 min_version("4.0")
