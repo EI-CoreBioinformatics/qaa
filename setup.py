@@ -15,7 +15,7 @@ with open(path.join(here, "DESCRIPTION.md"), encoding="utf-8") as description:
     description = long_description = description.read()
 
 name = "qaa"
-version = "0.4"
+version = "0.4.1"
 
 if sys.version_info.major != 3:
     raise EnvironmentError("""{} is a python module that requires python3, and is not compatible with python2.""".format(name))
@@ -57,7 +57,7 @@ setup(
 	},
 	include_package_data=True,
 	data_files=[
-		("etc", ["etc/qaa_config.yaml", "etc/hpc_config.json"]), 
-		("etc/util", ["etc/util/busco_init_dir"])
+		("qaa/etc", ["qaa/etc/qaa_config.yaml", "qaa/etc/hpc_config.json"]), 
+		("qaa/etc/util", ["qaa/etc/util/busco_init_dir"])
 	]
 )

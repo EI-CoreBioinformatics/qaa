@@ -20,7 +20,7 @@ __copyright__ = 'Copyright 2018 Earlham Institute'
 __version__ = pkg_resources.require("qaa")[0].version
 
 
-ETC_DIR = join(dirname(__file__), "..", "etc")
+ETC_DIR = join(dirname(__file__), "etc")
 DEFAULT_HPC_CONFIG_FILE = join(ETC_DIR, "hpc_config.json")
 DEFAULT_CONFIG_FILE = join(ETC_DIR, "qaa_config.yaml")
 QAA_ID = "XXX"
@@ -141,7 +141,7 @@ class QAA_Runner(object):
             self.config["full_samplesheet"] = self.config["samplesheet"] = args.input
 
         self.config["out_dir"] = self.output_dir
-        self.config["etc"] = join(dirname(__file__), "..", "etc")
+        self.config["etc"] = ETC_DIR
         self.config["cwd"] = os.getcwd()
         self.config["create_bam"] = args.align_reads != "no"
         self.config["align_reads"] = args.align_reads if args.align_reads != "no" else False
