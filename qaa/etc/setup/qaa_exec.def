@@ -1,0 +1,102 @@
+BootStrap: docker 
+From: centos:7
+OSVersion: 7
+# MirrorURL: http://yum-repos.hpccluster/centos/7/os/$basearch/
+MirrorURL: http://mirror.centos.org/centos-%{OSVERSION}/%{OSVERSION}/os/$basearch/
+Include: yum wget
+
+# If you want the updates (available at the bootstrap date) to be installed
+# inside the container during the bootstrap instead of the General Availability
+# point release (7.x) then uncomment the following line
+
+# UpdateURL: http://yum-repos.hpccluster/centos/7/updates/$basearch/
+
+%setup
+
+
+%environment
+    PATH=/opt/software/blobtools:/opt/software/samtools:/opt/software/blast/bin:/opt/miniconda/bin:$PATH
+    export PATH
+
+%post
+    #mkdir /jic
+    #mkdir /nbi
+    #mkdir -p /tgac
+    #mkdir -p /ei
+    # mkdir /tsl
+    mkdir -p /opt/software
+	
+    ### Install your packages ###
+
+    # update yum
+    yum makecache fast && \
+    yum update -y
+
+    yum -y install git bzip2 wget which sudo vi source zlib-devel bzip2-devel xz-devel
+    yum -y group install "Development Tools"
+
+
+    mini_version=4.5.4
+    wget https://repo.anaconda.com/miniconda/Miniconda3-${mini_version}-Linux-x86_64.sh
+    bash Miniconda3-${mini_version}-Linux-x86_64.sh -b -p /opt/miniconda
+    echo "PATH=/opt/miniconda/bin:\$PATH" >> /root/.bashrc
+    echo "export PATH" >> /root/.bashrc
+    rm Miniconda3-${mini_version}-Linux-x86_64.sh
+    source /root/.bashrc
+
+	# if this is uncommented, build process will not proceed after this!
+    # conda update -n base conda
+
+    export PYTHONPATH=/opt/miniconda/lib/python3.6/site-packages
+
+	#AUGUSTUS_CONFIG_PATH=/opt/miniconda/config
+	#export AUGUSTUS_CONFIG_PATH
+	#mkdir -p $AUGUSTUS_CONFIG_PATH
+	#chmod -R 777 "${AUGUSTUS_CONFIG_PATH}"	
+	
+	
+
+	
+	wget https://github.com/samtools/samtools/releases/download/1.9/samtools-1.9.tar.bz2
+	bunzip2 samtools-1.9.tar.bz2
+	tar xvf samtools-1.9.tar
+	mv samtools-1.9 /opt/software/samtools
+	cd /opt/software/samtools
+	./configure --without-curses
+	make 
+	ls 
+	cd
+
+	# conda install -y -c bioconda busco quast qualimap blobtools blast samtools bowtie2 bwa picard
+	conda install -y -c bioconda busco quast qualimap bowtie2 bwa picard
+	# blobtools create -h
+
+	# wget ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/LATEST/ncbi-blast-2.8.1+-2.x86_64.rpm
+	# rpm -ihv ncbi-blast-2.8.1+-2.x86_64.rpm
+	mkdir -p /opt/software/blast/
+
+	# blast-2.8 (needs to be here, otherwise it is overridden by conda installation)
+	wget ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/LATEST/ncbi-blast-2.8.1+-x64-linux.tar.gz
+	tar xvzf ncbi-blast-2.8.1+-x64-linux.tar.gz
+	ls 
+	mv -v ncbi-blast-2.8.1+/* /opt/software/blast/
+	ls /opt/software/blast/
+
+	cd /opt/software
+	git clone https://github.com/TGAC/MultiQC.git multiqc
+	cd multiqc
+	python setup.py bdist_wheel
+	pip install dist/*whl
+
+	cd /opt/software
+	git clone https://github.com/cschu/blobtools.git 
+	cd blobtools
+	git checkout py3port
+	./install
+
+	
+	
+	
+	
+
+

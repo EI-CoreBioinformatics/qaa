@@ -4,3 +4,6 @@ dist/
 qaa/__pycache__/
 qaa/reporting/__pycache__/
 qaa/zzz/qaa.smk.old.py
+class.py
+qaa/zzz/singularity/
+qaa/bin/
