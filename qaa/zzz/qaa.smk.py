@@ -4,7 +4,6 @@ import os
 from os.path import join, basename, dirname
 
 from qaa.samplesheet import readQAASamplesheet
-from qaa.cmdload import loadPreCmd
 from qaa.qaa_environment import QAA_Environment
 
 DEBUG = config.get("debugmode", False)
@@ -38,10 +37,8 @@ for sample in INPUTFILES:
 
 if config["run_multiqc"]:
 	# this always needs to be last!
-	TARGETS.append(join(config["multiqc_dir"], config["misc"]["project"] + "_" + runmode + "_multiqc_report.html"))
+	TARGETS.append(join(config["multiqc_dir"], config["project_prefix"] + "_" + runmode + "_multiqc_report.html"))
 
-# 2019-01-16 commenting this out, if still runs, remove at next opportunity
-# TARGETS = list(filter(lambda t:t, TARGETS)) # why? 2018-07-20 I don't think this is needed anymore.
 
 if DEBUG:
 	with open("qaa-inputfiles.txt", "w") as input_out:
@@ -65,9 +62,11 @@ def getTranscripts(wildcards):
 def getProteins(wildcards):
 	return INPUTFILES[wildcards.sample].proteins
 
-def get_singularity_call(cfg, cmd):
-	assert "qaa_singularity_env" in cfg
-	return "singularity exec {0} {1}".format(cfg.get("qaa_singularity_env"), cmd)
+def get_cmd_call(cfg, container):
+	call = cfg.get("singularity", dict()).get(container, "")
+	return "singularity exec {0} ".format(call) if call and cfg.get("singularity", dict()).get("use_singularity", False) else ""
+
+CMD_CALL = get_cmd_call(config, "qaa_container")
 
 
 ### RULES ###
@@ -83,13 +82,12 @@ if config["run_multiqc"]:
 		input:
 			TARGETS[:-1]
 		output:
-			join(config["multiqc_dir"], config["misc"]["project"] + "_" + runmode + "_multiqc_report.html")
+			join(config["multiqc_dir"], config["project_prefix"] + "_" + runmode + "_multiqc_report.html")
 		params:
-			load = loadPreCmd(config["load"]["multiqc"]),
 			mqc_config = config["resources"]["multiqc_config"],
 			datadir = qaa_env.output_dir,
 			outdir = config["multiqc_dir"],
-			prefix = config["misc"]["project"] + "_" + runmode,
+			prefix = config["project_prefix"] + "_" + runmode,
 			mqc_files = runmode + "_MQC_LIST.txt",
 			fastqcdir = join(qaa_env.qc_dir, "fastqc", "bbnorm" if config["normalized"] else "bbduk"),
 			katdir = join(qaa_env.qc_dir, "kat"),
@@ -98,7 +96,7 @@ if config["run_multiqc"]:
 			qualimapdir = qaa_env.qualimap_dir,
 			samplesheet = config["full_samplesheet"],
 			mode = runmode,
-			cmd = get_singularity_call(config, "multiqc")
+			cmd = CMD_CALL + "multiqc"
 		log:
 			join(qaa_env.log_dir, runmode + "_readqc_multiqc.log")
 		shell:
@@ -146,10 +144,9 @@ if config["run_proteome_module"]:
 			tmp = lambda wildcards: join(qaa_env.busco_prot_dir, "tmp", wildcards.sample),
 			busco_data = lambda wildcards: getBUSCOData(wildcards.sample),
 			busco_mode = "prot",
-			#inputpath = lambda wildcards: getProteins(wildcards) if getProteins(wildcards).startswith("/") else join(qaa_env.cwd, getProteins(wildcards)),
 			inputpath = lambda wildcards: os.path.abspath(getProteins(wildcards)),
-			cp_init = get_singularity_call(config, "cp -r"),
-			cmd = get_singularity_call(config, "run_BUSCO.py"),
+			cp_init = CMD_CALL + "cp -r",
+			cmd = CMD_CALL + "run_BUSCO.py",
 			configdir = lambda wildcards: join(qaa_env.busco_prot_dir, "config", wildcards.sample)
 		threads:
 			8
@@ -170,10 +167,9 @@ if config["run_transcriptome_module"]:
 			tmp = lambda wildcards: join(qaa_env.busco_tran_dir, "tmp", wildcards.sample),
 			busco_data = lambda wildcards: getBUSCOData(wildcards.sample),
 			busco_mode = "tran",
-			#inputpath = lambda wildcards: getTranscripts(wildcards) if getTranscripts(wildcards).startswith("/") else join(qaa_env.cwd, getTranscripts(wildcards)),
 			inputpath = lambda wildcards: os.path.abspath(getTranscripts(wildcards)),
-			cp_init = get_singularity_call(config, "cp -r"),
-			cmd = get_singularity_call(config, "run_BUSCO.py"),
+			cp_init = CMD_CALL + "cp -r",
+			cmd = CMD_CALL + "run_BUSCO.py",
 			configdir = lambda wildcards: join(qaa_env.busco_tran_dir, "config", wildcards.sample)
 		threads:
 			8
@@ -195,10 +191,9 @@ if config["run_genome_module"]:
 				tmp = lambda wildcards: join(qaa_env.busco_geno_dir, "tmp", wildcards.sample),
 				busco_data = lambda wildcards: getBUSCOData(wildcards.sample),
 				busco_mode = "geno",
-				# inputpath = lambda wildcards: getAssembly(wildcards) if getAssembly(wildcards).startswith("/") else join(qaa_env.cwd, getAssembly(wildcards)),
 				inputpath = lambda wildcards: os.path.abspath(getAssembly(wildcards)),
-				cmd = get_singularity_call(config, "run_BUSCO.py"),
-				cp_init = get_singularity_call(config, "cp -r"),
+				cp_init = CMD_CALL + "cp -r",
+				cmd = CMD_CALL + "run_BUSCO.py",
 				configdir = lambda wildcards: join(qaa_env.busco_geno_dir, "config", wildcards.sample)
 			threads:
 				8
@@ -211,9 +206,8 @@ if config["run_genome_module"]:
 		output:
 				join(qaa_env.quast_dir, "{sample}", "transposed_report.tsv")
 		params:
-				load = loadPreCmd(config["load"]["quast"]),
 				outdir = lambda wildcards: join(qaa_env.quast_dir, wildcards.sample),
-				cmd = get_singularity_call(config, "quast.py"),
+				cmd = CMD_CALL + "quast.py",
 				contiglen = config["quast_mincontiglen"]
 		log:
 				join(qaa_env.log_dir, "{sample}.asm_quast_assembly.log")
@@ -228,27 +222,17 @@ if config["run_genome_module"]:
 	if config["align_reads"]:
 		BAM_THREADS = 16
 		if config["align_reads"] == "bowtie2":
-			QAA_ALIGN_BUILD_INDEX = get_singularity_call(
-				config, 
-				"bowtie2-build --threads {threads} {input.assembly} {params.ref}"
-			)
-			QAA_ALIGN = get_singularity_call(
-				config,				
+			QAA_ALIGN_BUILD_INDEX = CMD_CALL + "bowtie2-build --threads {threads} {input.assembly} {params.ref}"
+			QAA_ALIGN = CMD_CALL + \
 				"bowtie2 --threads {params.align_threads} -x {params.ref} " + \
 				"-1 {input.reads[0]} -2 {input.reads[1]} --rg-id {params.sample} " + \
 				"--rg LB:{params.sample} --rg PL:illumina --rg SM:{params.sample} --rg PU:{params.sample}"
-			)
 		else: # bwa
-			QAA_ALIGN_BUILD_INDEX = get_singularity_call(
-				config,
-				"bwa index -p {params.ref} {input.assembly}"
-			)
-			QAA_ALIGN = get_singularity_call(
-				config,
+			QAA_ALIGN_BUILD_INDEX = CMD_CALL + "bwa index -p {params.ref} {input.assembly}"
+			QAA_ALIGN = CMD_CALL + \
 				"bwa mem -t {threads} " + \
 				"-R '@RG\\tID:1\\tLB:{params.sample}\\tPL:illumina\\tSM:{params.sample}\\tPU:{params.sample}' " + \
 				"{params.ref} {input.reads[0]} {input.reads[1]}"
-			)
 
 		rule qaa_align_reads:
 			input:
@@ -264,10 +248,8 @@ if config["run_genome_module"]:
 				outbam = lambda wildcards: join(qaa_env.bam_dir, wildcards.sample, wildcards.sample, ".align_reads.bam"),
 				align_threads = BAM_THREADS // 2,
 				sort_threads = BAM_THREADS // 2,
-				samtools_call = get_singularity_call(config, "samtools"),
-				markdup_call = get_singularity_call(config, "picard MarkDuplicates"),
-				load_markdup = loadPreCmd(config["load"]["picard"]),
-				cmd_markdup = loadPreCmd(config["cmd"]["picard_markdup"], is_dependency=False),
+				samtools_cmd = CMD_CALL + "samtools",
+				markdup_cmd = CMD_CALL + "picard MarkDuplicates",
 				sample = lambda wildcards: wildcards.sample
 			threads:
 				BAM_THREADS
@@ -275,14 +257,13 @@ if config["run_genome_module"]:
 				TIME_CMD + " " + QAA_ALIGN_BUILD_INDEX + " &&" + \
 				" touch {output.bam}.ref_index.done &&" + \
 				" " + TIME_CMD + " " + QAA_ALIGN + " |" + \
-				" {params.samtools_call} sort -@ {params.sort_threads} -o {output.bam}.tmp.bam - &&" + \
+				" {params.samtools_cmd} sort -@ {params.sort_threads} -o {output.bam}.tmp.bam - &&" + \
 				" touch {output.bam}.sort.done &&" + \
-				" {params.load_markdup}" + \
-				TIME_CMD + " {params.markdup_call}" + \
+				TIME_CMD + " {params.markdup_cmd}" + \
 				" INPUT={output.bam}.tmp.bam OUTPUT={output.bam}" + \
 				" METRICS_FILE={output.bam}.metrics.txt REMOVE_DUPLICATES=true ASSUME_SORT_ORDER=coordinate &&" + \
 				" touch {output.bam}.markdup.done &&" + \
-				" {params.samtools_call} index {output.bam} &&" + \
+				" {params.samtools_cmd} index {output.bam} &&" + \
 				" touch {output.bam}.bam_index.done &&" + \
 				" rm {output.bam}.tmp.bam" + \
 				" 2> {log}"
@@ -294,9 +275,8 @@ if config["run_genome_module"]:
 			output:
 				join(qaa_env.qualimap_dir, "{sample}", "qualimapReport.html")
 			params:
-				load = loadPreCmd(config["load"]["qualimap"]),
 				outdir = lambda wildcards: join(qaa_env.qualimap_dir, wildcards.sample),
-				cmd = get_singularity_call(config, "qualimap"),
+				cmd = CMD_CALL + "qualimap",
 				mem = config["qualimap_mem"]  # this is coming from within qaa/__init__.py
 			log: 
 				join(qaa_env.log_dir, "{sample}.qualimap.log")
@@ -315,8 +295,7 @@ if config["run_genome_module"]:
 				join(qaa_env.log_dir, "{sample}.blast.log")
 			params:
 				outdir = lambda wildcards: join(qaa_env.blast_dir, wildcards.sample),
-				load = loadPreCmd(config["load"]["blob_blast"]),
-				cmd = get_singularity_call(config, "blastn"),
+				cmd = CMD_CALL + "blastn",
 				blastdb = config["resources"]["blob_blastdb"]
 			threads:
 				8
@@ -340,9 +319,8 @@ if config["run_genome_module"]:
 				join(qaa_env.log_dir, "{sample}.blobtools.log")
 			params:
 				prefix = lambda wildcards: join(qaa_env.blob_dir, wildcards.sample, wildcards.sample),
-				load = loadPreCmd(config["load"]["blobtools"]),
 				taxlevel = "genus",
-				cmd = get_singularity_call(config, "blobtools"),
+				cmd = CMD_CALL + "blobtools",
 				min_contiglen = config["quast_mincontiglen"] # 1000
 			threads:
 				1
