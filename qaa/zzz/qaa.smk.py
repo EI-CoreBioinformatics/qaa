@@ -84,7 +84,7 @@ if config["run_multiqc"]:
 		output:
 			join(config["multiqc_dir"], config["project_prefix"] + "_" + runmode + "_multiqc_report.html")
 		params:
-			mqc_config = config["resources"]["multiqc_config"],
+			mqc_config = config["multiqc_config"],
 			datadir = qaa_env.output_dir,
 			outdir = config["multiqc_dir"],
 			prefix = config["project_prefix"] + "_" + runmode,

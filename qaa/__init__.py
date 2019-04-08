@@ -123,12 +123,13 @@ class QAA_Runner(WorkflowRunner):
 		# these are coming in via api: #api
 		self.config["normalized"] = args.normalized if hasattr(args, "normalized") else False # api
 		try:
-			self.config["misc"]["project"] = args.project_prefix # api
+			self.config["project_prefix"] = args.project_prefix # api
 		except:
 			pass
 
 		self.config["run_multiqc"] = args.run_multiqc if hasattr(args, "run_multiqc") else True # api
 		self.config["multiqc_dir"] = args.multiqc_dir if hasattr(args, "multiqc_dir") else "."
+		self.config["multiqc_config"] = args.multiqc_config if hasattr(args, "multiqc_config") else "."
 		self.config["survey_assembly"] = self.runmode == "survey" # api
 		self.config["run_blobtools"] = args.run_blobtools if hasattr(args, "run_blobtools") else True # api
 		self.config["run_qualimap"] = args.run_qualimap if hasattr(args, "run_qualimap") else True
