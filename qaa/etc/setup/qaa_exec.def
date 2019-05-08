@@ -32,9 +32,13 @@ Include: yum wget
     yum makecache fast && \
     yum update -y
 
-    yum -y install git bzip2 wget which sudo vi source zlib-devel bzip2-devel xz-devel
+    yum -y install git bzip2 wget which sudo vi source zlib-devel bzip2-devel xz-devel dejavu* fontconfig
+	ln -s /usr/share/fonts/dejavu /usr/share/fonts/dejavu-lgc
     yum -y group install "Development Tools"
 
+    yum -y install libXext.x86_64
+    yum -y install libXrender.x86_64
+    yum -y install libXtst.x86_64
 
     mini_version=4.5.4
     wget https://repo.anaconda.com/miniconda/Miniconda3-${mini_version}-Linux-x86_64.sh
@@ -67,19 +71,18 @@ Include: yum wget
 	ls 
 	cd
 
-	# conda install -y -c bioconda busco quast qualimap blobtools blast samtools bowtie2 bwa picard
-	conda install -y -c bioconda busco quast qualimap bowtie2 bwa picard
-	# blobtools create -h
+	conda install -y -c bioconda -c anaconda busco quast qualimap bowtie2 bwa picard matplotlib docopt tqdm pyyaml git pysam
 
 	# wget ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/LATEST/ncbi-blast-2.8.1+-2.x86_64.rpm
 	# rpm -ihv ncbi-blast-2.8.1+-2.x86_64.rpm
 	mkdir -p /opt/software/blast/
 
-	# blast-2.8 (needs to be here, otherwise it is overridden by conda installation)
-	wget ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/LATEST/ncbi-blast-2.8.1+-x64-linux.tar.gz
-	tar xvzf ncbi-blast-2.8.1+-x64-linux.tar.gz
-	ls 
-	mv -v ncbi-blast-2.8.1+/* /opt/software/blast/
+	# blast(-2.8?) (needs to be here, otherwise it is overridden by conda installation)
+	blast_version=2.9.0
+	wget ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/LATEST/ncbi-blast-${blast_version}+-x64-linux.tar.gz
+	tar xvzf ncbi-blast-${blast_version}+-x64-linux.tar.gz
+	ls
+	mv -v ncbi-blast-${blast_version}+/* /opt/software/blast/
 	ls /opt/software/blast/
 
 	cd /opt/software
@@ -89,11 +92,18 @@ Include: yum wget
 	pip install dist/*whl
 
 	cd /opt/software
-	git clone https://github.com/cschu/blobtools.git 
+	git clone https://github.com/DRL/blobtools.git 
 	cd blobtools
-	git checkout py3port
-	./install
+	git fetch
+	# version 1.1.1
+	git checkout a1f64750abc9eac47cd1dc5a42a069b02ce21fbb
+	python setup.py install
 
+	wget ftp://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdump.tar.gz -P data/
+	tar zxf data/taxdump.tar.gz -C data/ nodes.dmp names.dmp
+	./blobtools nodesdb --nodes data/nodes.dmp --names data/names.dmp
+
+	
 	
 	
 	
