@@ -327,5 +327,5 @@ if config["run_genome_module"]:
 			shell:
 				" {params.cmd} create -i {input.assembly} -b {input.bam} -t {input.blast} -o {params.prefix} &&" + \
 				" {params.cmd} view -i {params.prefix}.blobDB.json -o $(dirname {params.prefix})/ -r {params.taxlevel} &&" + \
-				" {params.cmd} blobplot -r {params.taxlevel} -l {params.min_contiglen} -i {params.prefix}.blobDB.json -o $(dirname {params.prefix})/" + \
+				" {params.cmd} plot -r {params.taxlevel} -l {params.min_contiglen} -i {params.prefix}.blobDB.json -o $(dirname {params.prefix})/" + \
 				" &> {log}"				
