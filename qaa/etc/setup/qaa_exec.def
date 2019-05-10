@@ -17,6 +17,8 @@ Include: yum wget
 %environment
     PATH=/opt/software/blobtools:/opt/software/samtools:/opt/software/blast/bin:/opt/miniconda/bin:$PATH
     export PATH
+	export LC_ALL=en_US.UTF-8
+	export LANG=en_US.UTF-8
 
 %post
     #mkdir /jic
@@ -88,6 +90,8 @@ Include: yum wget
 	cd /opt/software
 	git clone https://github.com/TGAC/MultiQC.git multiqc
 	cd multiqc
+	export LC_ALL=en_US.UTF-8
+	export LANG=en_US.UTF-8
 	python setup.py bdist_wheel
 	pip install dist/*whl
 

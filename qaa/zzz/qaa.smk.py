@@ -118,8 +118,8 @@ if config["run_multiqc"]:
 
 BUSCO_CMD = "" + \
 	"mkdir -p {params.outdir} && cd {params.outdir} && cd .. && " + \
-	"export AUGUSTUS_CONFIG_PATH={params.configdir} && mkdir -p {params.configdir} && " + \
-	"{params.cp_init} /opt/miniconda/config/ {params.configdir} && " + \
+	"export AUGUSTUS_CONFIG_PATH={params.configdir} && mkdir -p $(dirname {params.configdir}) && " + \
+	"{params.cp_init} /opt/miniconda/config {params.configdir} && " + \
 	"{params.cmd} -i {params.inputpath} -c {threads} -m {params.busco_mode} " + \
 	"--force -t {params.tmp} -l {params.busco_data} -o {wildcards.sample} && " + \
 	"touch {params.outdir}/short_summary_{wildcards.sample}.txt &> {log} && " + \
