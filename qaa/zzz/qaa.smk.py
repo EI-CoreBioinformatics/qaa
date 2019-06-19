@@ -217,7 +217,7 @@ if config["run_genome_module"]:
 				" ({params.cmd} -o {params.outdir} -t {threads} -L -s {input.assembly} --min-contig {params.contiglen}" + \
 				" || touch {params.outdir}/transposed_report.tsv {params.outdir}/report.tsv)" + \
 				" && cut -f 1,2 {params.outdir}/report.tsv > {params.outdir}/report.tsv.12" + \
-				" &> {log}"
+				" 2> {log}"
 
 	if config["align_reads"]:
 		BAM_THREADS = 16
