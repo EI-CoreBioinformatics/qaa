@@ -101,7 +101,7 @@ if config["run_multiqc"]:
 			join(qaa_env.log_dir, runmode + "_readqc_multiqc.log")
 		shell:
 			" find {params.buscodir} -name '*short_summary.txt' > {params.mqc_files}.tmp" + \
-			" && find {params.quastdir} -name 'report.tsv.12' >> {params.mqc_files}.tmp" + \
+			" && find {params.quastdir} -name 'report.tsv' >> {params.mqc_files}.tmp" + \
 			" && if [[ -d \"{params.katdir}\" && {params.mode} == \"survey\" ]]; then" + \
 			"   find {params.katdir} -name '*.json' >> {params.mqc_files}.tmp; fi" + \
 			" && if [[ -d \"{params.fastqcdir}\" && {params.mode} == \"survey\" ]]; then" + \
@@ -217,6 +217,8 @@ if config["run_genome_module"]:
 				" ({params.cmd} -o {params.outdir} -t {threads} -L -s {input.assembly} --min-contig {params.contiglen}" + \
 				" || touch {params.outdir}/transposed_report.tsv {params.outdir}/report.tsv)" + \
 				" && cut -f 1,2 {params.outdir}/report.tsv > {params.outdir}/report.tsv.12" + \
+				" && mv {params.outdir}/report.tsv {params.outdir}/report.tsv.full" + \
+				" && mv {params.outdir}/report.tsv.12 {params.outdir}/report.tsv" + \
 				" 2> {log}"
 
 	if config["align_reads"]:
