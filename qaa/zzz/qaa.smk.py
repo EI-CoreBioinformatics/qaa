@@ -71,14 +71,88 @@ CMD_CALL = get_cmd_call(config, "qaa_container")
 
 ### RULES ###
 
-localrules: all, qaa_multiqc
+localrules: all, qaa_compile_multiqc_inputs
 
 rule all:
 	input:
 		TARGETS
 
 if config["run_multiqc"]:
+	rule qaa_compile_multiqc_inputs:
+		input:
+			TARGETS[:-1]
+		output:
+			join(config["multiqc_dir"], config["project_prefix"] + "_" + runmode + ".multiqc_input.txt")
+		params:
+			fastqcdir = join(qaa_env.qc_dir, "fastqc", "bbnorm" if config["normalized"] else "bbduk"),
+			katdir = join(qaa_env.qc_dir, "kat"),
+			buscodir = qaa_env.busco_geno_dir,
+			quastdir = qaa_env.quast_dir,
+			qualimapdir = qaa_env.qualimap_dir,
+			samplesheet = config["full_samplesheet"],
+		run:
+			import os
+			import sys
+			import glob
+			import csv
+			input_files = list()
+			try:
+				input_files.extend(glob.glob(os.path.join(params.buscodir, "*", "*short_summary.txt")))
+			except:
+				print("Could not find busco output in " + params.buscodir, file=log)
+				pass
+			try:
+				input_files.extend(glob.glob(os.path.join(params.quastdir, "*", "report.tsv")))
+			except:
+				print("Could not find quast output in " + params.quastdir, file=log)
+				pass
+			if runmode == "survey":
+				try:
+					input_files.extend(glob.glob(os.path.join(params.katdir, "*", "*.json")))					
+				except:
+					print("Could not find kat output in " + params.katdir, file=log)
+					pass
+				try:
+					input_files.extend(glob.glob(os.path.join(params.fastqcdir, "*", "*", "fastqc_data.txt")))
+				except:
+					print("Could not find fastqc output in " + params.fastqcdir, file=log)			
+					pass
+			try:
+				input_files.extend(glob.glob(os.path.join(params.qualimapdir, "*", "*.txt")))
+			except:
+				print("Could not find qualimap output in " + params.qualimapdir, file=log)			
+				pass
+
+			valid_samples = set(row[0] for row in csv.reader(open(params.samplesheet), delimiter=",") if row[0])
+
+			# print("THESE ARE VALID SAMPLES", *valid_samples, sep="\n", file=sys.stderr)
+			# print("THESE ARE INPUT FILES", *input_files, sep="\n", file=sys.stderr)
+			with open(output[0], "w") as out:
+				for f in input_files:
+					if (os.path.basename(os.path.dirname(f)) in valid_samples or os.path.basename(os.path.dirname(os.path.dirname(f)))) and os.stat(f).st_size > 0:
+						print(f, file=out)
+
 	rule qaa_multiqc:
+		input:
+			rules.qaa_compile_multiqc_inputs.output[0]
+		output:                                                                                           	
+			join(config["multiqc_dir"], config["project_prefix"] + "_" + runmode + "_multiqc_report.html")
+		params:
+			mqc_config = config["multiqc_config"],
+			datadir = qaa_env.output_dir,
+			outdir = config["multiqc_dir"],
+			prefix = config["project_prefix"] + "_" + runmode,
+			mode = runmode,           			
+			cmd = CMD_CALL + "multiqc"
+		log:
+			join(qaa_env.log_dir, runmode + "_readqc_multiqc.log")
+		shell:
+			"{params.cmd} -f -n {params.prefix}_multiqc_report -i {params.prefix}" + \
+			" -z -c {params.mqc_config} -o {params.outdir}" + \
+			" --file-list {input}" + \
+			" &> {log}"
+	"""
+	rule qaa_multiqc_old:
 		input:
 			TARGETS[:-1]
 		output:
@@ -115,6 +189,7 @@ if config["run_multiqc"]:
 			" --file-list {params.mqc_files}" + \
 			" && rm {params.mqc_files}" + \
 			" &> {log}"
+	"""
 
 BUSCO_CMD = "" + \
 	"mkdir -p {params.outdir} && cd {params.outdir} && cd .. && " + \
