@@ -118,7 +118,7 @@ if config["run_multiqc"]:
 					print("Could not find fastqc output in " + params.fastqcdir, file=log)			
 					pass
 			try:
-				input_files.extend(glob.glob(os.path.join(params.qualimapdir, "*", "*.txt")))
+				input_files.extend(glob.glob(os.path.join(params.qualimapdir, "**", "*.txt"), recursive=True))
 			except:
 				print("Could not find qualimap output in " + params.qualimapdir, file=log)			
 				pass
