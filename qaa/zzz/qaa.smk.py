@@ -19,6 +19,8 @@ if type(config["samplesheet"]) is str:
 else:
 	INPUTFILES = dict(readQAASamplesheet(config["samplesheet"]))
 
+SINGLE_CELL_MODE = config.get("single_cell_mode", False)
+
 # generate target list
 TARGETS = list()
 for sample in INPUTFILES:
@@ -54,7 +56,7 @@ def getBUSCOData(sample):
 def getBAM(wildcards):
 	return INPUTFILES[wildcards.sample].bamfile
 def getReads(wildcards):
-	return INPUTFILES[wildcards.sample].r1, INPUTFILES[wildcards.sample].r2
+	return (INPUTFILES[wildcards.sample].r1, INPUTFILES[wildcards.sample].r2) if not SINGLE_CELL_MODE else (INPUTFILES[wildcards.sample].r1,)
 def getAssembly(wildcards):
 	return INPUTFILES[wildcards.sample].assembly
 def getTranscripts(wildcards):
@@ -224,15 +226,18 @@ if config["run_genome_module"]:
 		if config["align_reads"] == "bowtie2":
 			QAA_ALIGN_BUILD_INDEX = CMD_CALL + "bowtie2-build --threads {threads} {input.assembly} {params.ref}"
 			QAA_ALIGN = CMD_CALL + \
-				"bowtie2 --threads {params.align_threads} -x {params.ref} " + \
-				"-1 {input.reads[0]} -2 {input.reads[1]} --rg-id {params.sample} " + \
-				"--rg LB:{params.sample} --rg PL:illumina --rg SM:{params.sample} --rg PU:{params.sample}"
+				"bowtie2 --threads {{params.align_threads}} -x {{params.ref}} " + \
+				"{} --rg-id {{params.sample}} " + \
+				"--rg LB:{{params.sample}} --rg PL:illumina --rg SM:{{params.sample}} --rg PU:{{params.sample}}"
+			QAA_ALIGN = QAA_ALIGN.format("-1 {input.reads[0]} -2 {input.reads[1]}" if not SINGLE_CELL_MODE else "-U {input.reads[0]}")
 		else: # bwa
 			QAA_ALIGN_BUILD_INDEX = CMD_CALL + "bwa index -p {params.ref} {input.assembly}"
 			QAA_ALIGN = CMD_CALL + \
 				"bwa mem -t {threads} " + \
 				"-R '@RG\\tID:1\\tLB:{params.sample}\\tPL:illumina\\tSM:{params.sample}\\tPU:{params.sample}' " + \
-				"{params.ref} {input.reads[0]} {input.reads[1]}"
+				"{params.ref} {input.reads[0]}"
+			if not SINGLE_CELL_MODE:
+				QAA_ALIGN = QAA_ALIGN + " {input.reads[1]}"
 
 		rule qaa_align_reads:
 			input:
