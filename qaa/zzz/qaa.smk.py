@@ -96,32 +96,50 @@ if config["run_multiqc"]:
 			import glob
 			import csv
 			input_files = list()
-			try:
-				input_files.extend(glob.glob(os.path.join(params.buscodir, "*", "*short_summary.txt")))
-			except:
-				print("Could not find busco output in " + params.buscodir, file=log)
-				pass
-			try:
-				input_files.extend(glob.glob(os.path.join(params.quastdir, "*", "report.tsv")))
-			except:
-				print("Could not find quast output in " + params.quastdir, file=log)
-				pass
-			if runmode == "survey":
+			
+			qaa_multiqc_report_data = {
+				"quast": {
+					"path": qaa_env.quast_dir,
+					"pattern": ["*", "report.tsv"],
+					"recursive": False
+				},
+				"busco": {
+					"path": qaa_env.busco_geno_dir,
+					"pattern": ["*", "*short_summary.txt"],
+					"recursive": False
+				},
+				"qualimap": {
+					"path": qaa_env.qualimap_dir,
+					"pattern": ["**", "*.txt"],
+					"recursive": True
+				},
+				"prokka": {
+					"path": join(qaa_env.output_dir, "annotation", "prokka"),
+					"pattern": ["*", "*.txt"],
+					"recursive": False					
+				},
+				"kat": {
+					"path": join(qaa_env.qc_dir, "kat"),
+					"pattern": ["*", "*.json"],
+					"recursive": False
+				},
+				"fastqc": {
+					"path": join(qaa_env.qc_dir, "fastqc", "bbnorm" if config["normalized"] else "bbduk"),
+					"pattern": ["*", "*", "fastqc_data.txt"],
+					"recursive": False
+				}
+			}
+
+			for tool, tool_params in qaa_multiqc_report_data.items():
+				if tool == "prokka" and runmode != "asm":
+					continue
+				if (tool == "kat" or tool == "fastqc") and runmode != "survey":
+					continue
+				
 				try:
-					input_files.extend(glob.glob(os.path.join(params.katdir, "*", "*.json")))					
+					input_files.extend(glob.glob(os.path.join(tool_params["path"], *tool_params["pattern"]), recursive=tool_params["recursive"]))
 				except:
-					print("Could not find kat output in " + params.katdir, file=log)
-					pass
-				try:
-					input_files.extend(glob.glob(os.path.join(params.fastqcdir, "*", "*", "fastqc_data.txt")))
-				except:
-					print("Could not find fastqc output in " + params.fastqcdir, file=log)			
-					pass
-			try:
-				input_files.extend(glob.glob(os.path.join(params.qualimapdir, "**", "*.txt"), recursive=True))
-			except:
-				print("Could not find qualimap output in " + params.qualimapdir, file=log)			
-				pass
+					print("Could not find {} output in {}".format(tool, tool_params["path"]), file=log)
 
 			valid_samples = set(row[0] for row in csv.reader(open(params.samplesheet), delimiter=",") if row[0])
 
