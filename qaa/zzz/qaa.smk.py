@@ -73,14 +73,106 @@ CMD_CALL = get_cmd_call(config, "qaa_container")
 
 ### RULES ###
 
-localrules: all, qaa_multiqc
+localrules: all, qaa_compile_multiqc_inputs
 
 rule all:
 	input:
 		TARGETS
 
 if config["run_multiqc"]:
+	rule qaa_compile_multiqc_inputs:
+		input:
+			TARGETS[:-1]
+		output:
+			join(config["multiqc_dir"], config["project_prefix"] + "_" + runmode + ".multiqc_input.txt")
+		params:
+			fastqcdir = join(qaa_env.qc_dir, "fastqc", "bbnorm" if config["normalized"] else "bbduk"),
+			katdir = join(qaa_env.qc_dir, "kat"),
+			buscodir = qaa_env.busco_geno_dir,
+			quastdir = qaa_env.quast_dir,
+			qualimapdir = qaa_env.qualimap_dir,
+			samplesheet = config["full_samplesheet"],
+		run:
+			import os
+			import sys
+			import glob
+			import csv
+			input_files = list()
+			
+			qaa_multiqc_report_data = {
+				"quast": {
+					"path": qaa_env.quast_dir,
+					"pattern": ["*", "report.tsv"],
+					"recursive": False
+				},
+				"busco": {
+					"path": qaa_env.busco_geno_dir,
+					"pattern": ["*", "*short_summary.txt"],
+					"recursive": False
+				},
+				"qualimap": {
+					"path": qaa_env.qualimap_dir,
+					"pattern": ["**", "*.txt"],
+					"recursive": True
+				},
+				"prokka": {
+					"path": join(qaa_env.output_dir, "annotation", "prokka"),
+					"pattern": ["*", "*.txt"],
+					"recursive": False					
+				},
+				"kat": {
+					"path": join(qaa_env.qc_dir, "kat"),
+					"pattern": ["*", "*.json"],
+					"recursive": False
+				},
+				"fastqc": {
+					"path": join(qaa_env.qc_dir, "fastqc", "bbnorm" if config["normalized"] else "bbduk"),
+					"pattern": ["*", "*", "fastqc_data.txt"],
+					"recursive": False
+				}
+			}
+
+			for tool, tool_params in qaa_multiqc_report_data.items():
+				if tool == "prokka" and runmode != "asm":
+					continue
+				if (tool == "kat" or tool == "fastqc") and runmode != "survey":
+					continue
+				
+				try:
+					input_files.extend(glob.glob(os.path.join(tool_params["path"], *tool_params["pattern"]), recursive=tool_params["recursive"]))
+				except:
+					print("Could not find {} output in {}".format(tool, tool_params["path"]), file=log)
+
+			valid_samples = set(row[0] for row in csv.reader(open(params.samplesheet), delimiter=",") if row[0])
+
+			# print("THESE ARE VALID SAMPLES", *valid_samples, sep="\n", file=sys.stderr)
+			# print("THESE ARE INPUT FILES", *input_files, sep="\n", file=sys.stderr)
+			with open(output[0], "w") as out:
+				for f in input_files:
+					if (os.path.basename(os.path.dirname(f)) in valid_samples or os.path.basename(os.path.dirname(os.path.dirname(f)))) and os.stat(f).st_size > 0:
+						print(f, file=out)
+
 	rule qaa_multiqc:
+		input:
+			rules.qaa_compile_multiqc_inputs.output[0]
+		output:                                                                                           	
+			join(config["multiqc_dir"], config["project_prefix"] + "_" + runmode + "_multiqc_report.html")
+		params:
+			mqc_config = config["multiqc_config"],
+			datadir = qaa_env.output_dir,
+			outdir = config["multiqc_dir"],
+			prefix = config["project_prefix"] + "_" + runmode,
+			mode = runmode,           			
+			cmd = CMD_CALL + "multiqc"
+		log:
+			join(qaa_env.log_dir, runmode + "_readqc_multiqc.log")
+		shell:
+			"{params.cmd} -f -n {params.prefix}_multiqc_report -i {params.prefix}" + \
+			" -z -c {params.mqc_config} -o {params.outdir}" + \
+			" --file-list {input}" + \
+			" &> {log}"
+	"""
+	rule qaa_multiqc_old:
 		input:
 			TARGETS[:-1]
 		output:
@@ -103,7 +195,7 @@ if config["run_multiqc"]:
 			join(qaa_env.log_dir, runmode + "_readqc_multiqc.log")
 		shell:
 			" find {params.buscodir} -name '*short_summary.txt' > {params.mqc_files}.tmp" + \
-			" && find {params.quastdir} -name 'report.tsv.12' >> {params.mqc_files}.tmp" + \
+			" && find {params.quastdir} -name 'report.tsv' >> {params.mqc_files}.tmp" + \
 			" && if [[ -d \"{params.katdir}\" && {params.mode} == \"survey\" ]]; then" + \
 			"   find {params.katdir} -name '*.json' >> {params.mqc_files}.tmp; fi" + \
 			" && if [[ -d \"{params.fastqcdir}\" && {params.mode} == \"survey\" ]]; then" + \
@@ -117,6 +209,7 @@ if config["run_multiqc"]:
 			" --file-list {params.mqc_files}" + \
 			" && rm {params.mqc_files}" + \
 			" &> {log}"
+	"""
 
 BUSCO_CMD = "" + \
 	"mkdir -p {params.outdir} && cd {params.outdir} && cd .. && " + \
@@ -219,7 +312,9 @@ if config["run_genome_module"]:
 				" ({params.cmd} -o {params.outdir} -t {threads} -L -s {input.assembly} --min-contig {params.contiglen}" + \
 				" || touch {params.outdir}/transposed_report.tsv {params.outdir}/report.tsv)" + \
 				" && cut -f 1,2 {params.outdir}/report.tsv > {params.outdir}/report.tsv.12" + \
-				" &> {log}"
+				" && mv {params.outdir}/report.tsv {params.outdir}/report.tsv.full" + \
+				" && mv {params.outdir}/report.tsv.12 {params.outdir}/report.tsv" + \
+				" 2> {log}"
 
 	if config["align_reads"]:
 		BAM_THREADS = 16
