@@ -139,6 +139,7 @@ class QAA_Runner(WorkflowRunner):
 		self.config["run_proteome_module"] = self.runmode != "survey" and {"prot", "proteome"}.intersection(requested_modes)
 		self.config["quast_mincontiglen"] = args.quast_mincontiglen if hasattr(args, "quast_mincontiglen") else 0
 		self.config["annotation"] = args.annotation if hasattr(args, "annotation") else None
+		self.config["single_cell_mode"] = args.single_cell_mode
 
 		self.new_config_file = join(args.output_dir, "qaa.conf.yaml")
 		with open(self.new_config_file, "w") as conf_out:
